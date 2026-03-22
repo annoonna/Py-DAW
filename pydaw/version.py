@@ -1,2 +1,2 @@
-__version__ = "0.0.20.729"
+__version__ = "┌──(myenv)─(zuse㉿zuse)-[~/Downloads/Py-Studio-Rust-Qt-DAW2-026/Py_DAW_v0_0_20_729_TEAM_READY]"
 VERSION = __version__
