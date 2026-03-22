@@ -8,11 +8,11 @@ import sys
 
 # Versuche zuerst PyQt6 (DAW Standard)
 try:
-    from PyQt6 import QtWidgets, QtCore, QtGui
-    from PyQt6.QtCore import pyqtSignal as Signal, pyqtSlot as Slot
-    from PyQt6.QtWidgets import *
-    from PyQt6.QtCore import *
-    from PyQt6.QtGui import *
+    from PySide6 import QtWidgets, QtCore, QtGui
+    from PySide6.QtCore import Signal as Signal, Slot as Slot
+    from PySide6.QtWidgets import *
+    from PySide6.QtCore import *
+    from PySide6.QtGui import *
     
     QT_BACKEND = "PyQt6"
     

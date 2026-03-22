@@ -19,12 +19,12 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-from PyQt6.QtCore import Qt, QPointF, QRectF, QTimer, pyqtSignal, QRect
-from PyQt6.QtGui import (
+from PySide6.QtCore import Qt, QPointF, QRectF, QTimer, Signal, QRect
+from PySide6.QtGui import (
     QPainter, QPen, QBrush, QColor, QPainterPath,
     QLinearGradient, QFont,
 )
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QLabel,
     QComboBox, QToolButton, QMenu, QListWidget, QListWidgetItem,
     QSizePolicy, QLineEdit, QCompleter, QSplitter, QPushButton,
@@ -77,7 +77,7 @@ class EnhancedAutomationEditor(QWidget):
     """
 
     # Emitted when lane data changes (for project dirty-state)
-    lane_changed = pyqtSignal(str)  # parameter_id
+    lane_changed = Signal(str)  # parameter_id
 
     POINT_RADIUS = 5.0
     CTRL_RADIUS = 4.0
@@ -782,7 +782,7 @@ class _LaneStrip(QWidget):
     v0.0.20.432: Bitwig-style multi-lane stacking.
     """
 
-    close_requested = pyqtSignal(object)  # self
+    close_requested = Signal(object)  # self
 
     def __init__(self, mgr: AutomationManager, project: Any = None, parent=None):
         super().__init__(parent)

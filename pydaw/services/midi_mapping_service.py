@@ -21,7 +21,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Optional, Dict, Any, List, Tuple
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from pydaw.services.project_service import ProjectService
 from pydaw.services.transport_service import TransportService
@@ -131,11 +131,11 @@ class MidiMappingService(QObject):
     v0.0.20.397 — Extended to support ALL DAW parameters.
     """
 
-    status = pyqtSignal(str)
-    mapping_changed = pyqtSignal()
-    learn_started = pyqtSignal(str)
-    learn_completed = pyqtSignal()
-    value_applied = pyqtSignal(str, str, float)  # track_id, param, value
+    status = Signal(str)
+    mapping_changed = Signal()
+    learn_started = Signal(str)
+    learn_completed = Signal()
+    value_applied = Signal(str, str, float)  # track_id, param, value
 
     def __init__(
         self,
@@ -160,7 +160,7 @@ class MidiMappingService(QObject):
         # v0.0.20.412: Throttle project_updated emissions to prevent GUI freeze
         # from high-rate CC messages (controllers send 30-120 msgs/sec).
         self._ui_dirty = False
-        from PyQt6.QtCore import QTimer
+        from PySide6.QtCore import QTimer
         self._ui_throttle = QTimer(self)
         self._ui_throttle.setInterval(100)  # max 10 UI updates/sec
         self._ui_throttle.timeout.connect(self._flush_ui_update)

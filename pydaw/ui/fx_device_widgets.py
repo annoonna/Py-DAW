@@ -13,8 +13,8 @@ import os
 from pathlib import Path
 from typing import Any, Optional
 
-from PyQt6.QtCore import Qt, QTimer, QSignalBlocker, QThread, pyqtSignal, QProcess, QSocketNotifier
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer, QSignalBlocker, QThread, Signal, QProcess, QSocketNotifier
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame,
     QDial, QSlider, QDoubleSpinBox, QSpinBox, QComboBox, QCheckBox,
     QPushButton, QLineEdit, QGroupBox, QFormLayout, QFileDialog, QMessageBox, QMenu
@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 
 try:
     # Optional widgets used by some devices (keep imports resilient).
-    from PyQt6.QtWidgets import QScrollArea
+    from PySide6.QtWidgets import QScrollArea
 except Exception:  # pragma: no cover
     QScrollArea = None
 
@@ -48,7 +48,7 @@ def _qt_is_deleted(obj: Any) -> bool:
     if obj is None:
         return True
     try:
-        from PyQt6 import sip  # type: ignore
+        from PySide6 import sip  # type: ignore
         return bool(sip.isdeleted(obj))
     except Exception:
         try:
@@ -171,7 +171,7 @@ def _install_automation_menu(parent: QWidget, widget: QWidget, parameter_id: str
 
     # Initial check
     try:
-        from PyQt6.QtCore import QTimer
+        from PySide6.QtCore import QTimer
         QTimer.singleShot(500, _update_mapped_indicator)
     except Exception:
         pass
@@ -269,7 +269,7 @@ def _install_automation_menu(parent: QWidget, widget: QWidget, parameter_id: str
                     except Exception:
                         pass
                     try:
-                        from PyQt6.QtWidgets import QApplication
+                        from PySide6.QtWidgets import QApplication
                         for w in QApplication.topLevelWidgets():
                             sb = getattr(w, 'statusBar', None)
                             if callable(sb):
@@ -1330,7 +1330,7 @@ class Lv2AudioFxWidget(QWidget):
             val = float(value)
             mn = float(info.get("minimum", 0.0)) if isinstance(info, dict) else 0.0
             mx = float(info.get("maximum", 1.0)) if isinstance(info, dict) else 1.0
-            from PyQt6.QtCore import QSignalBlocker
+            from PySide6.QtCore import QSignalBlocker
             if sld is not None and hasattr(sld, 'setValue'):
                 if mx > mn:
                     sld_val = int((val - mn) / (mx - mn) * 1000.0)
@@ -1361,7 +1361,7 @@ class Lv2AudioFxWidget(QWidget):
         if rt is None:
             return
         try:
-            from PyQt6.QtCore import QSignalBlocker
+            from PySide6.QtCore import QSignalBlocker
             for sym, row_data in self._rows.items():
                 try:
                     _row, sld, spn, (mn, mx, df) = row_data
@@ -1478,7 +1478,7 @@ class Lv2AudioFxWidget(QWidget):
             except Exception:
                 auto = [0, 1]
 
-            from PyQt6.QtCore import QSignalBlocker
+            from PySide6.QtCore import QSignalBlocker
             with QSignalBlocker(cmb):
                 cmb.clear()
                 cmb.addItem(f"Auto ({auto[0]}/{auto[1]})", ['auto'])
@@ -2098,7 +2098,7 @@ class _NoteFxBase(QWidget):
                 except Exception:
                     pass
                 try:
-                    from PyQt6.QtWidgets import QApplication
+                    from PySide6.QtWidgets import QApplication
                     for w in QApplication.topLevelWidgets():
                         sb = getattr(w, 'statusBar', None)
                         if callable(sb):
@@ -3356,7 +3356,7 @@ class LadspaAudioFxWidget(QWidget):
                 return
             _, sld, spn, (mn, mx, df) = row_data
             val = float(value)
-            from PyQt6.QtCore import QSignalBlocker
+            from PySide6.QtCore import QSignalBlocker
             if sld is not None and hasattr(sld, 'setValue'):
                 if mx > mn:
                     sld_val = int((val - mn) / (mx - mn) * 1000.0)
@@ -3758,8 +3758,8 @@ class _Vst3ParamLoader(QThread):
     hanging the UI for 10-60 s when a complex VST3 bundle (e.g. lsp-plugins.vst3)
     was added via the Plugin Browser.
     """
-    params_ready = pyqtSignal(list)   # list[Vst3ParamInfo]
-    load_failed  = pyqtSignal(str)    # error message
+    params_ready = Signal(list)   # list[Vst3ParamInfo]
+    load_failed  = Signal(str)    # error message
 
     def __init__(self, vst3_path: str, plugin_name: str, parent=None):
         super().__init__(parent)
@@ -3790,10 +3790,10 @@ class _VstInProcessEditorThread(QThread):
       editor_closed      — show_editor() returned (window was closed)
       editor_error(str)  — exception string
     """
-    editor_ready  = pyqtSignal()
-    editor_wid    = pyqtSignal(int)   # v0.0.20.402: carries the X11 window ID
-    editor_closed = pyqtSignal()
-    editor_error  = pyqtSignal(str)
+    editor_ready  = Signal()
+    editor_wid    = Signal(int)   # v0.0.20.402: carries the X11 window ID
+    editor_closed = Signal()
+    editor_error  = Signal(str)
 
     def __init__(self, plugin_obj: Any, window_title: str = "", parent=None):
         super().__init__(parent)
@@ -3909,7 +3909,7 @@ class _Vst2EditorDialog(QWidget):
         QTimer(30ms) ──────────► effEditIdle()
         closeEvent ────────────► effEditClose()
     """
-    editor_closed_signal = pyqtSignal()
+    editor_closed_signal = Signal()
 
     # ── Toolbar height constant ─────────────────────────────────────────
     _TOOLBAR_H = 28
@@ -3960,7 +3960,7 @@ class _Vst2EditorDialog(QWidget):
         v0.0.20.409: Critical fix for X11 BadWindow crash on Wayland/XWayland.
         winId() is only valid after the native X11 window is actually mapped.
         """
-        from PyQt6.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication
         try:
             QApplication.processEvents()
 
@@ -4239,7 +4239,7 @@ class VstEditorContainer(QWidget):
     Pin uses x11_set_above() on OUR container's winId() — always works
     because WE own the widget and know its ID.
     """
-    editor_closed = pyqtSignal()
+    editor_closed = Signal()
     _TOOLBAR_H = 28
 
     def __init__(self, native_wid: int, plugin_name: str = "",
@@ -4267,7 +4267,7 @@ class VstEditorContainer(QWidget):
         self._editor_w = max(200, width)
         self._editor_h = max(150, height)
         try:
-            from PyQt6.QtGui import QWindow
+            from PySide6.QtGui import QWindow
             qwin = QWindow.fromWinId(native_wid)
             if qwin is not None:
                 container = QWidget.createWindowContainer(qwin, self)
@@ -4958,7 +4958,7 @@ class Vst3AudioFxWidget(QWidget):
             # v0.0.20.409: show() FIRST, then deferred_editor_open()
             # This avoids X11 BadWindow crash on Wayland/XWayland.
             dialog.show()
-            from PyQt6.QtWidgets import QApplication
+            from PySide6.QtWidgets import QApplication
             QApplication.processEvents()
 
             ok = dialog.deferred_editor_open()
@@ -5304,7 +5304,7 @@ class Vst3AudioFxWidget(QWidget):
 
         # v0.0.20.397 — Wayland Auto-Fix: force XCB for native VST editors
         try:
-            from PyQt6.QtCore import QProcessEnvironment
+            from PySide6.QtCore import QProcessEnvironment
             env = QProcessEnvironment.systemEnvironment()
             sess = (os.environ.get("XDG_SESSION_TYPE", "") or "").lower()
             has_wayland = bool(os.environ.get("WAYLAND_DISPLAY", ""))
@@ -5604,7 +5604,7 @@ class Vst3AudioFxWidget(QWidget):
     def _show_editor_error(self, msg: str) -> None:
         """Display a short toast-style status message for editor errors."""
         try:
-            from PyQt6.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(
                 self, "VST Editor",
                 f"Nativer Editor konnte nicht geöffnet werden:\n\n{msg}\n\n"
@@ -5839,7 +5839,7 @@ class Vst3AudioFxWidget(QWidget):
                 return
             val = float(value)
             # Update slider + spinbox without re-triggering callbacks
-            from PyQt6.QtCore import QSignalBlocker
+            from PySide6.QtCore import QSignalBlocker
             if hasattr(widget, 'setValue') and hasattr(widget, 'maximum'):
                 # QSlider (range 0-1000)
                 if mx > mn:
@@ -6680,7 +6680,7 @@ class ClapAudioFxWidget(QWidget):
             rt = getattr(ae, "rt_params", None) if ae else None
             if rt is None:
                 return
-            from PyQt6.QtCore import QSignalBlocker
+            from PySide6.QtCore import QSignalBlocker
             for name, row_data in self._rows.items():
                 try:
                     _row, ctrl, spn, (mn, mx, df) = row_data
@@ -6724,7 +6724,7 @@ class ClapAudioFxWidget(QWidget):
                 return
             _, ctrl, spn, (mn, mx, df) = row_data
             val = float(value)
-            from PyQt6.QtCore import QSignalBlocker
+            from PySide6.QtCore import QSignalBlocker
             if ctrl is not None and hasattr(ctrl, 'setValue') and hasattr(ctrl, 'maximum'):
                 if mx > mn:
                     sld_val = int((val - mn) / (mx - mn) * 1000.0)
@@ -7408,7 +7408,7 @@ class ClapAudioFxWidget(QWidget):
                 self._status.setText("Preset: get_state lieferte keine Daten")
                 return
 
-            from PyQt6.QtWidgets import QInputDialog
+            from PySide6.QtWidgets import QInputDialog
             name, ok = QInputDialog.getText(
                 self, "CLAP Preset speichern",
                 "Preset-Name:",
@@ -7611,7 +7611,7 @@ class ClapAudioFxWidget(QWidget):
 
     def _open_editor_deferred(self) -> None:
         import sys
-        from PyQt6.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication
 
         if self._editor_window is None or self._editor_gui_container is None:
             self._editor_open_pending = False
@@ -9094,7 +9094,7 @@ class _InstrumentLayerContainerWidget(QWidget):
     def _show_instrument_picker(self, layer_index: int, anchor: QWidget) -> None:
         """Show popup menu to select an instrument for this layer."""
         try:
-            from PyQt6.QtGui import QCursor
+            from PySide6.QtGui import QCursor
             menu = QMenu(self)
             menu.setStyleSheet("QMenu { font-size: 11px; min-width: 200px; }")
             all_actions: list = []
@@ -9164,7 +9164,7 @@ class _InstrumentLayerContainerWidget(QWidget):
                 # v0.0.20.543: SF2 needs a file path
                 if plugin_id == "chrono.sf2":
                     try:
-                        from PyQt6.QtWidgets import QFileDialog
+                        from PySide6.QtWidgets import QFileDialog
                         sf2_path, _ = QFileDialog.getOpenFileName(
                             self, "SF2 Soundfont auswählen", "",
                             "SF2 Soundfonts (*.sf2 *.SF2);;Alle Dateien (*)"
@@ -9443,7 +9443,7 @@ def _save_container_preset(device: dict, parent: QWidget) -> bool:
     """Show a save dialog and write the container device dict as JSON preset."""
     try:
         import json as _json
-        from PyQt6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog
         d = _container_presets_dir()
         name = str(device.get("name") or device.get("plugin_id") or "container")
         safe_name = "".join(c if c.isalnum() or c in " _-" else "_" for c in name).strip() or "preset"
@@ -9469,7 +9469,7 @@ def _load_container_preset(parent: QWidget) -> Optional[dict]:
     """Show a load dialog and return the container device dict from a JSON preset."""
     try:
         import json as _json
-        from PyQt6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog
         d = _container_presets_dir()
         path, _ = QFileDialog.getOpenFileName(
             parent, "Container-Preset laden", str(d),

@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from typing import Dict, Tuple
 
-from PyQt6.QtCore import Qt, QPointF, QRectF
-from PyQt6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap, QPolygonF
+from PySide6.QtCore import Qt, QPointF, QRectF
+from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap, QPolygonF
 
 
 _PY_BLUE = QColor("#3776AB")

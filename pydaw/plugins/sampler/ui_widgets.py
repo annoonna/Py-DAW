@@ -12,9 +12,9 @@ from typing import Optional
 
 import numpy as np
 
-from PyQt6.QtCore import Qt, QTimer, QRectF, pyqtSignal
-from PyQt6.QtGui import QPainter, QColor, QPen, QFont
-from PyQt6.QtWidgets import QWidget, QSizePolicy, QFrame, QMenu
+from PySide6.QtCore import Qt, QTimer, QRectF, Signal
+from PySide6.QtGui import QPainter, QColor, QPen, QFont
+from PySide6.QtWidgets import QWidget, QSizePolicy, QFrame, QMenu
 
 
 class CompactKnob(QWidget):
@@ -30,7 +30,7 @@ class CompactKnob(QWidget):
     - We block signals on external updates so legacy engine wiring does not fire.
     """
 
-    valueChanged = pyqtSignal(int)
+    valueChanged = Signal(int)
 
     def __init__(self, title: str = "", init: int = 0, parent=None):
         super().__init__(parent)
@@ -296,7 +296,7 @@ class CompactKnob(QWidget):
             self.setStyleSheet("border: 2px solid #ff6060;")
             # Status message
             try:
-                from PyQt6.QtWidgets import QApplication
+                from PySide6.QtWidgets import QApplication
                 sb = None
                 for w in QApplication.topLevelWidgets():
                     sb = getattr(w, "statusBar", None)

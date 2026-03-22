@@ -28,10 +28,10 @@ import logging
 import math
 from typing import Optional
 
-from PyQt6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, QTimer, pyqtSignal
+from PySide6.QtCore import QPoint, QPointF, QRect, QRectF, Qt, QTimer, Signal
 
-from PyQt6.QtGui import QBrush, QCursor, QFont, QPainter, QColor, QPen, QPolygonF, QTransform
-from PyQt6.QtWidgets import (
+from PySide6.QtGui import QBrush, QCursor, QFont, QPainter, QColor, QPen, QPolygonF, QTransform
+from PySide6.QtWidgets import (
     QApplication,
     QGraphicsItem,
     QGraphicsScene,
@@ -295,7 +295,7 @@ class _NoteItem(QGraphicsItem):
 
             # Subtle glow effect (always, dezent — pitch-color based)
             try:
-                from PyQt6.QtGui import QPainterPath
+                from PySide6.QtGui import QPainterPath
 
                 note_head_w = self._style.note_head_w
                 note_head_h = self._style.note_head_h
@@ -550,7 +550,7 @@ class _ConnectionItem(QGraphicsItem):
             ctrl_x = (self._x1 + self._x2) * 0.5
             ctrl_y = y_up
 
-            from PyQt6.QtGui import QPainterPath
+            from PySide6.QtGui import QPainterPath
 
             path = QPainterPath()
             path.moveTo(self._x1, self._y1)
@@ -578,7 +578,7 @@ class _ConnectionItem(QGraphicsItem):
 class NotationView(QGraphicsView):
     """Notation view that renders notes from the current clip."""
 
-    notes_changed = pyqtSignal()
+    notes_changed = Signal()
 
     def __init__(self, project_service, *, parent: Optional[QWidget] = None):
         scene = QGraphicsScene()
@@ -615,7 +615,7 @@ class NotationView(QGraphicsView):
         self._apply_view_transform()
         # Keep colors predictable across themes.
         try:
-            from PyQt6.QtGui import QBrush
+            from PySide6.QtGui import QBrush
 
             self.setBackgroundBrush(QBrush(Qt.GlobalColor.white))
         except Exception:
@@ -1756,7 +1756,7 @@ class NotationView(QGraphicsView):
                         pass
                     # Show a tiny context menu (Delete)
                     try:
-                        from PyQt6.QtWidgets import QMenu
+                        from PySide6.QtWidgets import QMenu
                         menu = QMenu(self)
                         act_del = menu.addAction("Löschen")
                         act = menu.exec(event.globalPosition().toPoint())
@@ -2569,7 +2569,7 @@ class NotationView(QGraphicsView):
                     _emit_status("Kein MIDI-Clip ausgewählt.")
                     return
                 try:
-                    from PyQt6.QtWidgets import QInputDialog
+                    from PySide6.QtWidgets import QInputDialog
                     text, ok = QInputDialog.getMultiLineText(self, "Editor-Notiz", "Notiztext:", "")
                     if not ok:
                         return
@@ -2617,7 +2617,7 @@ class NotationView(QGraphicsView):
             act_about.setToolTip("Zeigt eine Kurzreferenz der verfügbaren Notations-Symbole.")
             def _show_about() -> None:
                 try:
-                    from PyQt6.QtWidgets import QMessageBox
+                    from PySide6.QtWidgets import QMessageBox
                     QMessageBox.information(self, "Notations-Symbole (Professionelles)",
                         "🎵 Notenwerte: Ganze (1/1) bis 64tel (1/64), punktiert, doppelt punktiert\n"
                         "⏸ Pausen: Ganze Pause bis 32tel-Pause, Pausenmodus (Y)\n"
@@ -2960,6 +2960,8 @@ class NotationView(QGraphicsView):
 
     def _rebuild_scene_base(self) -> None:
         sc = self.scene()
+        if sc is None:
+            return
         sc.clear()
         self._note_items.clear()
 
@@ -3144,8 +3146,8 @@ class NotationView(QGraphicsView):
 class NotationWidget(QWidget):
     """A small tab-friendly wrapper around :class:`NotationView`."""
 
-    status_message = pyqtSignal(str)
-    record_toggled = pyqtSignal(bool)  # v0.0.20.449: MIDI live-record toggle
+    status_message = Signal(str)
+    record_toggled = Signal(bool)  # v0.0.20.449: MIDI live-record toggle
 
     def __init__(self, project_service, *, transport=None, editor_timeline=None,
                  parent: Optional[QWidget] = None):
@@ -3405,7 +3407,7 @@ class NotationWidget(QWidget):
 
         def _add_editor_note_from_palette() -> None:
             try:
-                from PyQt6.QtWidgets import QInputDialog
+                from PySide6.QtWidgets import QInputDialog
                 txt, ok = QInputDialog.getMultiLineText(self, "Editor-Notiz", "Notiztext:", "")
                 if not ok:
                     return
@@ -3578,7 +3580,7 @@ class NotationWidget(QWidget):
     def _show_help(self) -> None:
         """Show notation editor help dialog (v0.0.20.455)."""
         try:
-            from PyQt6.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.information(self, "Notation-Editor — Bedienung",
                 "🎵 Noten setzen (Draw-Modus)\n"
                 "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -3619,7 +3621,7 @@ class NotationWidget(QWidget):
 
     def _on_add_ghost_layer(self) -> None:
         """Handle add ghost layer request from Layer Panel."""
-        from PyQt6.QtWidgets import QDialog
+        from PySide6.QtWidgets import QDialog
         from pydaw.ui.clip_selection_dialog import ClipSelectionDialog
         from pydaw.model.ghost_notes import LayerState
         
@@ -3664,10 +3666,10 @@ class NotationWidget(QWidget):
 def _run_demo() -> None:
     """Standalone visual demo (does not require the full DAW)."""
 
-    from PyQt6.QtCore import QObject
+    from PySide6.QtCore import QObject
 
     class _Stub(QObject):
-        project_updated = pyqtSignal()
+        project_updated = Signal()
 
         def __init__(self):
             super().__init__()

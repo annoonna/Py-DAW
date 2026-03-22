@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QColor, QPainter, QPainterPath, QBrush
-from PyQt6.QtWidgets import QToolButton
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QBrush
+from PySide6.QtWidgets import QToolButton
 
 
 class PythonLogoButton(QToolButton):
@@ -146,7 +146,7 @@ class PythonLogoButton(QToolButton):
         We approximate the official logo with two rounded, stepped shapes.
         This is a crisp vector rendition and scales cleanly.
         """
-        from PyQt6.QtCore import QRectF
+        from PySide6.QtCore import QRectF
 
         # Geometry in 100x100 space.
         rad = 10.0

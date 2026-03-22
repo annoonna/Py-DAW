@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
-from PyQt6.QtCore import QObject
+from PySide6.QtCore import QObject
 
 
 def _interp(points: List[Dict[str, Any]], beat: float) -> Optional[float]:

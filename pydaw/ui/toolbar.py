@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtWidgets import (
     QWidget, QHBoxLayout, QLabel, QComboBox, QToolButton,
     QSizePolicy, QDoubleSpinBox, QCheckBox,
 )
@@ -23,9 +23,9 @@ class ToolBarPanel(QWidget):
     """
 
     # Emitted when loop fields change: (enabled, start_beat, end_beat)
-    loop_changed = pyqtSignal(bool, float, float)
+    loop_changed = Signal(bool, float, float)
     # Emitted when Follow toggle changes
-    follow_changed = pyqtSignal(bool)
+    follow_changed = Signal(bool)
 
     def __init__(self, parent=None):
         super().__init__(parent)

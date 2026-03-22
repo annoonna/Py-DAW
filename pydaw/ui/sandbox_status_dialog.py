@@ -20,13 +20,13 @@ import logging
 from typing import Optional
 
 try:
-    from PyQt6.QtWidgets import (
+    from PySide6.QtWidgets import (
         QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
         QTableWidget, QTableWidgetItem, QHeaderView, QTextEdit,
         QTabWidget, QWidget, QMessageBox, QAbstractItemView,
     )
-    from PyQt6.QtCore import Qt, QTimer
-    from PyQt6.QtGui import QColor, QFont
+    from PySide6.QtCore import Qt, QTimer
+    from PySide6.QtGui import QColor, QFont
     _QT = True
 except ImportError:
     _QT = False

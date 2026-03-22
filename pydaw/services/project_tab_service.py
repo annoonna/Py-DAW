@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from pydaw.fileio.file_manager import (
     ProjectContext,
@@ -74,13 +74,13 @@ class ProjectTabService(QObject):
     This service coordinates switching, opening, closing, and cross-project ops.
     """
 
-    tab_added = pyqtSignal(int)                  # index
-    tab_removed = pyqtSignal(int)                # index
-    tab_switched = pyqtSignal(int, int)          # old_idx, new_idx
-    tab_renamed = pyqtSignal(int, str)           # index, name
-    tab_dirty_changed = pyqtSignal(int, bool)    # index, dirty
-    status = pyqtSignal(str)
-    error = pyqtSignal(str)
+    tab_added = Signal(int)                  # index
+    tab_removed = Signal(int)                # index
+    tab_switched = Signal(int, int)          # old_idx, new_idx
+    tab_renamed = Signal(int, str)           # index, name
+    tab_dirty_changed = Signal(int, bool)    # index, dirty
+    status = Signal(str)
+    error = Signal(str)
 
     def __init__(self, parent: QObject | None = None):
         super().__init__(parent)

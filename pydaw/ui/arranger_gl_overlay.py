@@ -25,9 +25,9 @@ try:
 except Exception:
     np = None
 
-from PyQt6.QtCore import Qt, QRectF, QTimer
-from PyQt6.QtGui import QColor, QPainter, QPen, QBrush
-from PyQt6.QtWidgets import QWidget
+from PySide6.QtCore import Qt, QRectF, QTimer
+from PySide6.QtGui import QColor, QPainter, QPen, QBrush
+from PySide6.QtWidgets import QWidget
 
 from pydaw.utils.logging_setup import get_logger
 

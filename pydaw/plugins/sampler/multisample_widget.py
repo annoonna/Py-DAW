@@ -20,12 +20,12 @@ import os
 from pathlib import Path
 from typing import Optional, List
 
-from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal, QMimeData
-from PyQt6.QtGui import (
+from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QMimeData
+from PySide6.QtGui import (
     QPainter, QColor, QPen, QBrush, QFont, QFontMetrics,
     QMouseEvent, QPaintEvent, QWheelEvent, QDragEnterEvent, QDropEvent,
 )
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QComboBox, QSpinBox, QDoubleSpinBox,
     QGroupBox, QScrollArea, QSplitter, QFrame,
@@ -52,9 +52,9 @@ _AUDIO_FILTER = "Audio files ({});;All files (*)".format(
 class ZoneMapCanvas(QWidget):
     """2D canvas showing key (X) × velocity (Y) zone rectangles."""
 
-    zone_selected = pyqtSignal(str)  # zone_id
-    zone_resized = pyqtSignal(str)   # zone_id after resize
-    drop_files = pyqtSignal(list, int, int)  # files, note, velocity
+    zone_selected = Signal(str)  # zone_id
+    zone_resized = Signal(str)   # zone_id after resize
+    drop_files = Signal(list, int, int)  # files, note, velocity
 
     def __init__(self, sample_map: MultiSampleMap, parent: QWidget = None):
         super().__init__(parent)
@@ -416,7 +416,7 @@ class ZoneMapCanvas(QWidget):
 class ZoneInspector(QWidget):
     """Inspector panel for editing properties of the selected zone."""
 
-    zone_changed = pyqtSignal(str)  # zone_id
+    zone_changed = Signal(str)  # zone_id
 
     def __init__(self, sample_map: MultiSampleMap, parent: QWidget = None):
         super().__init__(parent)
@@ -964,7 +964,7 @@ class MultiSampleEditorWidget(QWidget):
     Combines ZoneMapCanvas + ZoneInspector + toolbar with auto-mapping buttons.
     """
 
-    map_changed = pyqtSignal()  # emitted on any change
+    map_changed = Signal()  # emitted on any change
 
     def __init__(self, sample_map: MultiSampleMap = None, parent: QWidget = None):
         super().__init__(parent)

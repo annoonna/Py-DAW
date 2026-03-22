@@ -7,9 +7,9 @@ import random
 import time
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer, QMimeData, QPoint, QSignalBlocker, pyqtSignal
-from PyQt6.QtGui import QPainter, QPen, QColor, QPainterPath, QDrag, QBrush
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer, QMimeData, QPoint, QSignalBlocker, Signal
+from PySide6.QtGui import QPainter, QPen, QColor, QPainterPath, QDrag, QBrush
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QFrame,
     QPushButton, QComboBox, QLineEdit, QCheckBox, QSizePolicy, QPlainTextEdit,
     QToolButton, QMenu, QSpinBox, QDoubleSpinBox, QMessageBox, QFileDialog, QSlider
@@ -945,7 +945,7 @@ class _ModDropTargetButton(QPushButton):
 
 
 class _Section(QFrame):
-    expandedChanged = pyqtSignal(bool)
+    expandedChanged = Signal(bool)
 
     def __init__(self, title: str, parent=None, *, expanded: bool = True):
         super().__init__(parent)
@@ -3535,7 +3535,7 @@ class AeternaWidget(QWidget):
             pool = self._composer_catalog_for_family(fam)
             blockers = []
             try:
-                from PyQt6.QtCore import QSignalBlocker
+                from PySide6.QtCore import QSignalBlocker
                 blockers = [QSignalBlocker(self.cmb_comp_style_a), QSignalBlocker(self.cmb_comp_style_b)]
             except Exception:
                 blockers = []
@@ -4079,7 +4079,7 @@ class AeternaWidget(QWidget):
         if now - getattr(self, '_last_persist_t', 0.0) < 0.5:
             if not getattr(self, '_persist_deferred', False):
                 self._persist_deferred = True
-                from PyQt6.QtCore import QTimer
+                from PySide6.QtCore import QTimer
                 QTimer.singleShot(500, self._do_persist_now)
             return
         self._do_persist_now()
@@ -6409,7 +6409,7 @@ class AeternaWidget(QWidget):
         """Schedule deferred UI refresh — max ~8 times per second."""
         self._knob_refresh_pending_key = key
         if not hasattr(self, '_knob_refresh_timer'):
-            from PyQt6.QtCore import QTimer
+            from PySide6.QtCore import QTimer
             self._knob_refresh_timer = QTimer(self)
             self._knob_refresh_timer.setSingleShot(True)
             self._knob_refresh_timer.setInterval(120)  # max ~8Hz

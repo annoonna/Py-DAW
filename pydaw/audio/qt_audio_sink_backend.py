@@ -18,10 +18,10 @@ from __future__ import annotations
 import threading
 from typing import Optional
 
-from PyQt6.QtCore import QIODevice, QByteArray
+from PySide6.QtCore import QIODevice, QByteArray
 
 try:
-    from PyQt6.QtMultimedia import QAudioSink, QAudioFormat, QMediaDevices
+    from PySide6.QtMultimedia import QAudioSink, QAudioFormat, QMediaDevices
 except Exception:  # pragma: no cover
     QAudioSink = None  # type: ignore
     QAudioFormat = None  # type: ignore

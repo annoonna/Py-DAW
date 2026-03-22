@@ -17,9 +17,9 @@ from typing import Optional
 
 from .browser_places_prefs import BrowserPlacesPrefs
 
-from PyQt6.QtCore import Qt, QMimeData, QUrl, QDir, pyqtSignal, QThread
-from PyQt6.QtGui import QDrag, QFileSystemModel
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QMimeData, QUrl, QDir, Signal, QThread
+from PySide6.QtGui import QDrag
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -35,6 +35,15 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMenu,
 )
+
+# QFileSystemModel: location differs between PyQt6 (QtGui) and PySide6 (QtWidgets)
+try:
+    from PySide6.QtWidgets import QFileSystemModel
+except ImportError:
+    try:
+        from PySide6.QtGui import QFileSystemModel
+    except ImportError:
+        from PySide6.QtCore import QFileSystemModel
 
 UNCOMPRESSED_EXTS = {".wav", ".aif", ".aiff", ".au", ".snd"}
 LOSSLESS_EXTS = {".flac", ".alac", ".caf", ".wv", ".ape"}
@@ -89,7 +98,7 @@ def _is_previewable_audio_file(path_str: str) -> bool:
 
 def _build_drag_pixmap(path_str: str):
     # lightweight ghost cursor preview (waveform for wav, icon otherwise)
-    from PyQt6.QtGui import QPixmap, QPainter, QColor, QFont, QPen
+    from PySide6.QtGui import QPixmap, QPainter, QColor, QFont, QPen
     name = Path(path_str).stem
     w, h = 180, 52
     pm = QPixmap(w, h)
@@ -154,8 +163,8 @@ def _build_drag_pixmap(path_str: str):
 
 
 class _SampleTreeView(QTreeView):
-    drag_started = pyqtSignal(str)
-    drag_finished = pyqtSignal()
+    drag_started = Signal(str)
+    drag_finished = Signal()
 
     def __init__(self, owner, parent=None):
         super().__init__(parent)
@@ -287,8 +296,8 @@ class _RenderWorker(QThread):
 class SampleBrowserWidget(QWidget):
     """File browser for audio samples with drag & drop + preview."""
 
-    audio_drag_started = pyqtSignal(str)
-    audio_drag_ended = pyqtSignal()
+    audio_drag_started = Signal(str)
+    audio_drag_ended = Signal()
 
     def __init__(self, audio_engine=None, transport=None, project_service=None, parent=None):
         super().__init__(parent)

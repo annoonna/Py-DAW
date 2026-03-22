@@ -19,7 +19,7 @@ from __future__ import annotations
 import threading
 from typing import Optional
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 try:
     from pythonosc import dispatcher as osc_dispatcher  # type: ignore
@@ -32,8 +32,8 @@ except ImportError:
 class OscMidiInput(QObject):
     """Receives OSC note messages and injects them into MidiManager."""
 
-    status = pyqtSignal(str)
-    error = pyqtSignal(str)
+    status = Signal(str)
+    error = Signal(str)
 
     def __init__(self, midi_manager=None, port: int = 9000, parent: Optional[QObject] = None):
         super().__init__(parent)

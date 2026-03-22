@@ -10,9 +10,9 @@ Dieser Patch macht PyQt6-Code PySide6-kompatibel.
 def patch_qt():
     """Patche Qt-Module für Kompatibilität."""
     try:
-        from PyQt6.QtGui import QPainter
-        from PyQt6.QtCore import Qt
-        from PyQt6.QtWidgets import QGraphicsView
+        from PySide6.QtGui import QPainter
+        from PySide6.QtCore import Qt
+        from PySide6.QtWidgets import QGraphicsView
         
         # Monkey-Patch QPainter für PySide6-Style
         if not hasattr(QPainter, 'Antialiasing'):

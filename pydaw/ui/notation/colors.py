@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from PyQt6.QtGui import QColor
+from PySide6.QtGui import QColor
 
 
 # Keep the base palette consistent with the PianoRoll.

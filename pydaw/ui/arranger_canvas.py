@@ -36,9 +36,9 @@ import copy
 import json
 from pathlib import Path
 
-from PyQt6.QtWidgets import QWidget, QMenu, QApplication, QToolTip
-from PyQt6.QtGui import QPainter, QPen, QBrush, QDrag, QColor, QKeyEvent, QPixmap, QPolygonF
-from PyQt6.QtCore import Qt, QRectF, pyqtSignal, QPointF, QMimeData, QRect
+from PySide6.QtWidgets import QWidget, QMenu, QApplication, QToolTip
+from PySide6.QtGui import QPainter, QPen, QBrush, QDrag, QColor, QKeyEvent, QPixmap, QPolygonF
+from PySide6.QtCore import Qt, QRectF, Signal, QPointF, QMimeData, QRect
 
 
 MIME_AUDIOEVENT_SLICE = "application/x-pydaw-audioevent-slice"
@@ -219,27 +219,27 @@ class _PeaksData:
 
 
 class ArrangerCanvas(QWidget):
-    zoom_changed = pyqtSignal(float)  # pixels_per_beat
-    clip_activated = pyqtSignal(str)
-    clip_selected = pyqtSignal(str)
-    request_rename_clip = pyqtSignal(str)
-    request_duplicate_clip = pyqtSignal(str)
-    request_delete_clip = pyqtSignal(str)
-    request_import_audio = pyqtSignal(str, float)  # track_id, start_beats
-    request_add_track = pyqtSignal(str)  # FIXED v0.0.19.7.19: track_kind ("audio", "instrument", "bus")
-    request_smartdrop_new_instrument_track = pyqtSignal(dict)  # v0.0.20.478: empty-space instrument SmartDrop payload
-    request_smartdrop_instrument_to_track = pyqtSignal(str, dict)  # v0.0.20.479: instrument SmartDrop onto existing instrument track
-    request_smartdrop_fx_to_track = pyqtSignal(str, dict)  # v0.0.20.480: compatible FX SmartDrop onto existing tracks
-    request_smartdrop_instrument_morph_guard = pyqtSignal(str, dict)  # v0.0.20.482: non-mutating preview/validate/apply guard for Instrument→Audio
-    status_message = pyqtSignal(str, int)  # (message, timeout_ms) - v0.0.19.7.0
+    zoom_changed = Signal(float)  # pixels_per_beat
+    clip_activated = Signal(str)
+    clip_selected = Signal(str)
+    request_rename_clip = Signal(str)
+    request_duplicate_clip = Signal(str)
+    request_delete_clip = Signal(str)
+    request_import_audio = Signal(str, float)  # track_id, start_beats
+    request_add_track = Signal(str)  # FIXED v0.0.19.7.19: track_kind ("audio", "instrument", "bus")
+    request_smartdrop_new_instrument_track = Signal(dict)  # v0.0.20.478: empty-space instrument SmartDrop payload
+    request_smartdrop_instrument_to_track = Signal(str, dict)  # v0.0.20.479: instrument SmartDrop onto existing instrument track
+    request_smartdrop_fx_to_track = Signal(str, dict)  # v0.0.20.480: compatible FX SmartDrop onto existing tracks
+    request_smartdrop_instrument_morph_guard = Signal(str, dict)  # v0.0.20.482: non-mutating preview/validate/apply guard for Instrument→Audio
+    status_message = Signal(str, int)  # (message, timeout_ms) - v0.0.19.7.0
 
-    loop_region_committed = pyqtSignal(bool, float, float)
-    punch_region_committed = pyqtSignal(bool, float, float)  # v0.0.20.637: enabled, in_beat, out_beat
+    loop_region_committed = Signal(bool, float, float)
+    punch_region_committed = Signal(bool, float, float)  # v0.0.20.637: enabled, in_beat, out_beat
 
     def __init__(self, project: ProjectService, parent=None):
         super().__init__(parent)
         # v0.0.20.607: Canvas must never push dock/window wider
-        from PyQt6.QtWidgets import QSizePolicy
+        from PySide6.QtWidgets import QSizePolicy
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.project = project
         self.transport: TransportService | None = None
@@ -455,7 +455,7 @@ class ArrangerCanvas(QWidget):
             self._cached_zoom_cursor = None
             # Strategy 1: XCursor name (works on X11 and most Wayland compositors)
             try:
-                from PyQt6.QtGui import QCursor
+                from PySide6.QtGui import QCursor
                 test = QCursor(Qt.CursorShape.CrossCursor)
                 # QCursor doesn't have a string-name constructor in PyQt6,
                 # but we can try via the xcb cursor name through QPixmap workaround.
@@ -1718,7 +1718,7 @@ class ArrangerCanvas(QWidget):
             seg_maxs = seg_maxs[::-1].copy()
 
         # Draw filled envelope path (same technique as Audio Editor)
-        from PyQt6.QtGui import QPainterPath
+        from PySide6.QtGui import QPainterPath
         mid_y = rect.center().y()
         amp_h = rect.height() * 0.42
         x0 = float(rect.left())
@@ -1806,7 +1806,7 @@ class ArrangerCanvas(QWidget):
                     # Small triangle marker at bottom
                     tri_h = min(6.0, rect.height() * 0.15)
                     tri_w = 4.0
-                    from PyQt6.QtGui import QPainterPath as _WarpPath
+                    from PySide6.QtGui import QPainterPath as _WarpPath
                     tri = _WarpPath()
                     tri.moveTo(x, rect.bottom() - tri_h)
                     tri.lineTo(x - tri_w, rect.bottom())
@@ -1827,7 +1827,7 @@ class ArrangerCanvas(QWidget):
                 badge = badge_map.get(smode, '')
                 if badge:
                     p.setPen(QPen(QColor(255, 200, 100, 220)))
-                    from PyQt6.QtGui import QFont as _WarpFont
+                    from PySide6.QtGui import QFont as _WarpFont
                     f = p.font()
                     f.setPointSize(max(7, f.pointSize() - 1))
                     p.setFont(f)
@@ -4484,7 +4484,7 @@ class ArrangerCanvas(QWidget):
     
     def _export_midi_clip(self, clip_id: str) -> None:
         """FIXED v0.0.19.7.15: Export MIDI Clip to .mid file."""
-        from PyQt6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog
         from pydaw.audio.midi_export import export_midi_clip
         
         # Get clip
@@ -4893,7 +4893,7 @@ class ArrangerCanvas(QWidget):
                         factor = cur_len / old_len
                         mode_label = "FREE" if getattr(self._drag_content_scale, 'free_mode', False) else "GRID"
                         p.setPen(QPen(QColor(0, 255, 220, 230)))
-                        from PyQt6.QtGui import QFont
+                        from PySide6.QtGui import QFont
                         f = p.font()
                         f.setPointSize(max(8, f.pointSize()))
                         f.setBold(True)
@@ -5210,7 +5210,7 @@ class ArrangerCanvas(QWidget):
             # Schedule a deferred update if not already pending
             if not getattr(self, '_deferred_update_pending', False):
                 self._deferred_update_pending = True
-                from PyQt6.QtCore import QTimer
+                from PySide6.QtCore import QTimer
                 QTimer.singleShot(50, self._deferred_project_update)
             return
         self._last_update_time = now

@@ -299,7 +299,7 @@ def _suppress_stderr_fd():
         except Exception:
             pass
 
-from PyQt6.QtCore import QObject, QThread, pyqtSignal
+from PySide6.QtCore import QObject, QThread, Signal
 
 Backend = Literal["jack", "sounddevice", "none"]
 
@@ -326,9 +326,9 @@ class _EngineThread(QThread):
     later (recording, transport sync, etc.).
     """
 
-    started_ok = pyqtSignal(str)
-    stopped_ok = pyqtSignal()
-    error = pyqtSignal(str)
+    started_ok = Signal(str)
+    stopped_ok = Signal()
+    error = Signal(str)
 
     def __init__(self, backend: Backend, config: Dict[str, Any]):
         super().__init__()
@@ -1368,10 +1368,10 @@ class _EngineThread(QThread):
 class AudioEngine(QObject):
     """High-level audio engine service."""
 
-    backend_changed = pyqtSignal(str)
-    status = pyqtSignal(str)
-    error = pyqtSignal(str)
-    running_changed = pyqtSignal(bool)
+    backend_changed = Signal(str)
+    status = Signal(str)
+    error = Signal(str)
+    running_changed = Signal(bool)
 
     def __init__(self):
         super().__init__()
@@ -2563,7 +2563,7 @@ class AudioEngine(QObject):
             print(f"[VST3-INST] {len(_failed_candidates)} engine(s) failed — scheduling deferred retry in 2s",
                   file=sys.stderr, flush=True)
             try:
-                from PyQt6.QtCore import QTimer
+                from PySide6.QtCore import QTimer
                 _self = self  # capture for closure
                 _fc = list(_failed_candidates)
                 _sr = sr
@@ -3485,7 +3485,7 @@ class AudioEngine(QObject):
                 sr = self.get_effective_sample_rate()
                 buf_size = 512
                 try:
-                    from PyQt6.QtCore import QSettings
+                    from PySide6.QtCore import QSettings
                     s = QSettings()
                     buf_size = int(s.value("audio/buffer_size", 512))
                 except Exception:

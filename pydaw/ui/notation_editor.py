@@ -15,9 +15,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, List
 
-from PyQt6.QtCore import Qt, QPointF, QRectF, pyqtSignal
-from PyQt6.QtGui import QPainter, QPen, QAction
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QPointF, QRectF, Signal
+from PySide6.QtGui import QPainter, QPen, QAction
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -55,9 +55,9 @@ class NoteItem(QGraphicsRectItem):
 
 
 class StaffView(QGraphicsView):
-    request_delete_selected = pyqtSignal()
-    request_delete_item = pyqtSignal(object)
-    request_add_note = pyqtSignal(QPointF)
+    request_delete_selected = Signal()
+    request_delete_item = Signal(object)
+    request_add_note = Signal(QPointF)
 
     def __init__(self, scene: QGraphicsScene):
         super().__init__(scene)

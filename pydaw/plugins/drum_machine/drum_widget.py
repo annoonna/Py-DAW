@@ -25,8 +25,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QSignalBlocker, QPoint, QMimeData, QEvent
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal, QSignalBlocker, QPoint, QMimeData, QEvent
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -49,7 +49,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QInputDialog,
 )
-from PyQt6.QtGui import QDrag, QCursor
+from PySide6.QtGui import QDrag, QCursor
 
 
 from pydaw.plugins.sampler.ui_widgets import CompactKnob, WaveformDisplay
@@ -76,7 +76,7 @@ def _note_name(midi: int) -> str:
 class DrumPadButton(QPushButton):
     """Pad button with drag&drop sample loading."""
 
-    sample_dropped = pyqtSignal(int, str)  # slot_idx, path
+    sample_dropped = Signal(int, str)  # slot_idx, path
 
     def __init__(self, slot_idx: int, text: str, parent=None):
         super().__init__(text, parent)

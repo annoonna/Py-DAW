@@ -20,7 +20,7 @@ from dataclasses import dataclass
 import math
 from typing import List
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from pydaw.services.project_service import ProjectService
 from pydaw.services.transport_service import TransportService
@@ -37,7 +37,7 @@ class _PendingLaunch:
 
 class LauncherService(QObject):
     # UI: pending (quantized) launches for "queued" indicator
-    pending_changed = pyqtSignal(object)  # list[dict{kind,key,at_beat}]
+    pending_changed = Signal(object)  # list[dict{kind,key,at_beat}]
 
     def __init__(self, project: ProjectService, transport: TransportService):
         super().__init__()

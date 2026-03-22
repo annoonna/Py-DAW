@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from typing import Callable, Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QLabel
-from PyQt6.QtWidgets import QSizePolicy
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget, QLabel
+from PySide6.QtWidgets import QSizePolicy
 
 from .sample_browser import SampleBrowserWidget
 from .instrument_browser import InstrumentBrowserWidget

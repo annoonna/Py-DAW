@@ -17,9 +17,9 @@ from __future__ import annotations
 import json
 from typing import Callable, Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal, QMimeData
-from PyQt6.QtGui import QDrag
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal, QMimeData
+from PySide6.QtGui import QDrag
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -105,7 +105,7 @@ class _StarDragQuickList(_DragQuickList):
 class DeviceQuickListWidget(QWidget):
     """A small browser tab that shows Favorites or Recents."""
 
-    prefs_changed = pyqtSignal()
+    prefs_changed = Signal()
 
     def __init__(
         self,

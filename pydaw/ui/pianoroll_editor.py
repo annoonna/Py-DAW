@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PyQt6.QtCore import Qt, pyqtSignal, QRect, QTimer
-from PyQt6.QtGui import QAction, QKeySequence
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal, QRect, QTimer
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtWidgets import (
     QComboBox,
     QGridLayout,
     QHBoxLayout,
@@ -69,7 +69,7 @@ class _PianoRollRuler(QWidget):
         self.scroll_area.verticalScrollBar().valueChanged.connect(self.update)
 
     def paintEvent(self, event):  # noqa: N802
-        from PyQt6.QtGui import QPainter, QPen, QColor
+        from PySide6.QtGui import QPainter, QPen, QColor
 
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
@@ -481,7 +481,7 @@ class _PianoRollKeyboard(QWidget):
         super().wheelEvent(event)
 
     def paintEvent(self, event):  # noqa: N802
-        from PyQt6.QtGui import QPainter
+        from PySide6.QtGui import QPainter
 
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
@@ -550,9 +550,9 @@ class _PianoRollKeyboard(QWidget):
 class PianoRollEditor(QWidget):
     """Piano roll editor with BachOrgelForge-like tool strip (UI-first)."""
 
-    status_message = pyqtSignal(str, int)
+    status_message = Signal(str, int)
     # MIDI live-record toggle (writes notes into clip)
-    record_toggled = pyqtSignal(bool)
+    record_toggled = Signal(bool)
 
     def __init__(self, project: ProjectService, transport: TransportService | None = None,
                  editor_timeline=None, parent=None):
@@ -562,7 +562,7 @@ class PianoRollEditor(QWidget):
         self._editor_timeline = editor_timeline  # v0.0.20.613: Dual-Clock Phase C
 
         # v0.0.20.618: PianoRoll muss vertikal expandieren um Dock-Platz zu füllen
-        from PyQt6.QtWidgets import QSizePolicy
+        from PySide6.QtWidgets import QSizePolicy
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Expanding)
         self.setMinimumHeight(120)
         self.setMinimumWidth(0)
@@ -622,7 +622,7 @@ class PianoRollEditor(QWidget):
             "Tipp: Wähle MIDI-Input pro Spur im Mixer (All ins / Controller)."
         )
 
-        from PyQt6.QtWidgets import QCheckBox
+        from PySide6.QtWidgets import QCheckBox
         self._chk_loop = QCheckBox("Loop")
         self._chk_loop.setStyleSheet("QCheckBox { color: #FF8C00; font-weight: bold; }")
         self._chk_loop.setChecked(False)
@@ -813,10 +813,10 @@ class PianoRollEditor(QWidget):
         # the canvas resizes (e.g. on Loop toggle). Fix: override sizeHint.
         class _StableScrollArea(QScrollArea):
             def sizeHint(self):
-                from PyQt6.QtCore import QSize
+                from PySide6.QtCore import QSize
                 return QSize(200, 200)
             def minimumSizeHint(self):
-                from PyQt6.QtCore import QSize
+                from PySide6.QtCore import QSize
                 return QSize(100, 80)
 
         self.scroll = _StableScrollArea()
@@ -1235,7 +1235,7 @@ class PianoRollEditor(QWidget):
     # ---- Ghost Notes / Layered Editing
     def _on_add_ghost_layer(self) -> None:
         """Handle add ghost layer request from Layer Panel."""
-        from PyQt6.QtWidgets import QDialog
+        from PySide6.QtWidgets import QDialog
         from pydaw.ui.clip_selection_dialog import ClipSelectionDialog
         from pydaw.model.ghost_notes import LayerState
         

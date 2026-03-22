@@ -27,7 +27,7 @@ from __future__ import annotations
 import sys
 from typing import TYPE_CHECKING, Optional
 
-from PyQt6.QtCore import QObject, QTimer, pyqtSignal
+from PySide6.QtCore import QObject, QTimer, Signal
 
 from pydaw.services.editor_focus import EditorFocusContext, LauncherSlotRuntimeState
 
@@ -44,8 +44,8 @@ class EditorTimelineAdapter(QObject):
         focus_changed(EditorFocusContext): Neuer Fokuskontext wurde gesetzt.
     """
 
-    playhead_changed = pyqtSignal(float)
-    focus_changed = pyqtSignal(object)  # EditorFocusContext
+    playhead_changed = Signal(float)
+    focus_changed = Signal(object)  # EditorFocusContext
 
     def __init__(
         self,

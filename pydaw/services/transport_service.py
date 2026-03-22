@@ -15,22 +15,22 @@ Notes:
 from __future__ import annotations
 
 import math
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+from PySide6.QtCore import QObject, Signal, QTimer
 
 
 class TransportService(QObject):
-    playhead_changed = pyqtSignal(float)  # current beat
-    playing_changed = pyqtSignal(bool)
-    bpm_changed = pyqtSignal(float)
-    reset_requested = pyqtSignal()  # request sample-accurate restart (engine)
-    loop_changed = pyqtSignal(bool, float, float)  # enabled, start, end
-    loop_boundary_reached = pyqtSignal()  # v0.0.20.639: fired when playhead wraps at loop end
+    playhead_changed = Signal(float)  # current beat
+    playing_changed = Signal(bool)
+    bpm_changed = Signal(float)
+    reset_requested = Signal()  # request sample-accurate restart (engine)
+    loop_changed = Signal(bool, float, float)  # enabled, start, end
+    loop_boundary_reached = Signal()  # v0.0.20.639: fired when playhead wraps at loop end
 
-    punch_changed = pyqtSignal(bool, float, float)  # enabled, in_beat, out_beat
-    punch_triggered = pyqtSignal(str)  # "in" or "out" — fired when playhead crosses boundary
+    punch_changed = Signal(bool, float, float)  # enabled, in_beat, out_beat
+    punch_triggered = Signal(str)  # "in" or "out" — fired when playhead crosses boundary
 
-    time_signature_changed = pyqtSignal(str)
-    metronome_tick = pyqtSignal(int, int, bool)  # bar_index, beat_in_bar (1..n), is_countin
+    time_signature_changed = Signal(str)
+    metronome_tick = Signal(int, int, bool)  # bar_index, beat_in_bar (1..n), is_countin
 
     def __init__(self, bpm: float = 120.0, time_signature: str = "4/4"):
         super().__init__()

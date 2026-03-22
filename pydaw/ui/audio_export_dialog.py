@@ -15,7 +15,7 @@ import logging
 from pathlib import Path
 from typing import Any, Optional
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
@@ -30,8 +30,8 @@ from PyQt6.QtWidgets import (
     QRadioButton,
     QFileDialog,
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 
 
 class AudioExportDialog(QDialog):
@@ -348,7 +348,7 @@ class AudioExportDialog(QDialog):
                 selected_tracks.append(track_id)
         
         if not selected_tracks:
-            from PyQt6.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "Keine Spuren", "Bitte mindestens eine Spur auswählen!")
             return
         
@@ -465,7 +465,7 @@ class AudioExportDialog(QDialog):
                 return None
 
             # Progress dialog
-            from PyQt6.QtWidgets import QProgressDialog, QMessageBox
+            from PySide6.QtWidgets import QProgressDialog, QMessageBox
             progress = QProgressDialog("Audio Export...", "Abbrechen", 0, 100, self)
             progress.setWindowTitle("Audio Export")
             progress.setMinimumDuration(0)
@@ -499,7 +499,7 @@ class AudioExportDialog(QDialog):
                 )
 
         except Exception as e:
-            from PyQt6.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(self, "Export Fehler", f"Export fehlgeschlagen:\n{e}")
         
         self.accept()

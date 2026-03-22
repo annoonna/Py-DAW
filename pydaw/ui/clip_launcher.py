@@ -24,7 +24,7 @@ try:
 except Exception:  # pragma: no cover
     sf = None  # type: ignore
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -40,9 +40,9 @@ from PyQt6.QtWidgets import (
     QStyle,
     QStyleOptionButton,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QPoint, QRect, QRectF, QTimer
-from PyQt6.QtGui import QDrag, QPainter, QPen, QColor, QKeySequence, QShortcut
-from PyQt6.QtCore import QMimeData
+from PySide6.QtCore import Qt, Signal, QPoint, QRect, QRectF, QTimer
+from PySide6.QtGui import QDrag, QPainter, QPen, QColor, QKeySequence, QShortcut
+from PySide6.QtCore import QMimeData
 
 from pydaw.services.project_service import ProjectService
 from pydaw.services.launcher_service import LauncherService
@@ -64,7 +64,7 @@ class _PeaksData:
 class SlotButton(QPushButton):
     """A slot button that supports drop + (Alt) drag + double-click for loop editor."""
 
-    double_clicked = pyqtSignal()  # NEU: Doppelklick Signal
+    double_clicked = Signal()  # NEU: Doppelklick Signal
 
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
@@ -380,8 +380,8 @@ class SlotWaveButton(SlotButton):
                     p.setBrush(Qt.BrushStyle.NoBrush)
                     p.drawRect(content.adjusted(2, 2, -3, -3))
                     # Small queued triangle outline (top-left)
-                    from PyQt6.QtGui import QPolygon
-                    from PyQt6.QtCore import QPoint
+                    from PySide6.QtGui import QPolygon
+                    from PySide6.QtCore import QPoint
                     tri = QPolygon([
                         QPoint(int(content.left() + 10), int(content.top() + 7)),
                         QPoint(int(content.left() + 10), int(content.top() + 19)),
@@ -413,8 +413,8 @@ class SlotWaveButton(SlotButton):
                     ]
                     p.setPen(Qt.PenStyle.NoPen)
                     p.setBrush(hl)
-                    from PyQt6.QtGui import QPolygon
-                    from PyQt6.QtCore import QPoint
+                    from PySide6.QtGui import QPolygon
+                    from PySide6.QtCore import QPoint
                     p.drawPolygon(QPolygon([QPoint(x, y) for x, y in tri]))
                     p.restore()
             except Exception:
@@ -453,8 +453,8 @@ class SlotWaveButton(SlotButton):
                 ico.setAlpha(255 if self._hover else 190)
                 p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(ico)
-                from PyQt6.QtGui import QPolygon
-                from PyQt6.QtCore import QPoint
+                from PySide6.QtGui import QPolygon
+                from PySide6.QtCore import QPoint
                 cx = int(r.center().x())
                 cy = int(r.center().y())
                 tri = QPolygon([
@@ -564,7 +564,7 @@ class SlotWaveButton(SlotButton):
 
                 if info_txt:
                     p.setPen(info_col)
-                    from PyQt6.QtGui import QFont
+                    from PySide6.QtGui import QFont
                     small = QFont(p.font())
                     small.setPointSize(max(6, small.pointSize() - 2))
                     p.setFont(small)
@@ -601,9 +601,9 @@ class SlotWaveButton(SlotButton):
             p.end()
 
 class ClipLauncherPanel(QWidget):
-    clip_activated = pyqtSignal(str)  # clip_id
-    clip_edit_requested = pyqtSignal(str)  # clip_id (double click)
-    slot_drop_requested = pyqtSignal(object, object)  # (SlotButton, QDropEvent)
+    clip_activated = Signal(str)  # clip_id
+    clip_edit_requested = Signal(str)  # clip_id (double click)
+    slot_drop_requested = Signal(object, object)  # (SlotButton, QDropEvent)
 
     def __init__(
         self,
@@ -628,7 +628,7 @@ class ClipLauncherPanel(QWidget):
         # Allow the right dock group (Browser/Clip Launcher) to be shrunk
         # "almost closed" without being blocked by minimum-size hints.
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             self.setMinimumSize(0, 0)
             self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         except Exception:
@@ -744,11 +744,11 @@ class ClipLauncherPanel(QWidget):
         layout.addLayout(header)
 
         # ── Main area: Inspector (left) + Grid (right) ──
-        from PyQt6.QtWidgets import QSplitter
+        from PySide6.QtWidgets import QSplitter
 
         self.main_splitter = QSplitter(Qt.Orientation.Horizontal)
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             self.main_splitter.setMinimumSize(0, 0)
             self.main_splitter.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
         except Exception:
@@ -782,7 +782,7 @@ class ClipLauncherPanel(QWidget):
         grid_container = QWidget()
         # v0.0.20.595: Shrinkable grid container
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             grid_container.setMinimumSize(0, 0)
             grid_container.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
         except Exception:
@@ -795,7 +795,7 @@ class ClipLauncherPanel(QWidget):
         # v0.0.20.595: Enable horizontal scroll so grid doesn't force window wider
         self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             self.scroll.setMinimumSize(0, 0)
             self.scroll.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
         except Exception:
@@ -805,7 +805,7 @@ class ClipLauncherPanel(QWidget):
         self.inner = QWidget()
         # v0.0.20.595: Allow inner grid to be smaller than scroll area
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             self.inner.setMinimumSize(0, 0)
             self.inner.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         except Exception:
@@ -866,7 +866,7 @@ class ClipLauncherPanel(QWidget):
                 # Float as large window
                 dock.setFloating(True)
                 try:
-                    from PyQt6.QtWidgets import QApplication
+                    from PySide6.QtWidgets import QApplication
                     screen = QApplication.primaryScreen()
                     if screen:
                         geo = screen.availableGeometry()
@@ -1331,7 +1331,7 @@ class ClipLauncherPanel(QWidget):
             return
 
         try:
-            from PyQt6.QtWidgets import QLineEdit
+            from PySide6.QtWidgets import QLineEdit
             edit = QLineEdit(btn)
             edit.setText(str(getattr(clip, 'label', 'Clip') or 'Clip'))
             edit.selectAll()
@@ -1889,7 +1889,7 @@ class ClipLauncherPanel(QWidget):
     def _rename_scene_inline(self, scene_index: int, lbl: QLabel) -> None:
         """Show inline QLineEdit over the scene label."""
         try:
-            from PyQt6.QtWidgets import QLineEdit
+            from PySide6.QtWidgets import QLineEdit
             edit = QLineEdit(lbl.parent())
             edit.setText(lbl.text())
             edit.selectAll()
@@ -1992,7 +1992,7 @@ class ClipLauncherPanel(QWidget):
         Clips are cloned with launcher_only=False.
         """
         try:
-            from PyQt6.QtWidgets import QInputDialog
+            from PySide6.QtWidgets import QInputDialog
             text, ok = QInputDialog.getText(
                 self, "Scene-Chain → Arranger",
                 "Szenen-Reihenfolge (z.B. '1,2,3,2,4' oder '1-4'):",
@@ -2071,7 +2071,7 @@ class ClipLauncherPanel(QWidget):
             if not clip or str(getattr(clip, 'kind', '')) != 'midi':
                 return
 
-            from PyQt6.QtWidgets import QInputDialog
+            from PySide6.QtWidgets import QInputDialog
             patterns = [
                 "Arpeggio (Dur aufwärts)",
                 "Arpeggio (Moll aufwärts)",
@@ -2230,7 +2230,7 @@ class ClipLauncherPanel(QWidget):
             if not notes:
                 return
 
-            from PyQt6.QtWidgets import QInputDialog
+            from PySide6.QtWidgets import QInputDialog
             grids = ["1/16 (tight)", "1/8 (standard)", "1/4 (loose)", "1/4T (triplet)", "1/8T (triplet)"]
             choice, ok = QInputDialog.getItem(self, "Smart Quantize", "Grid:", grids, 1, False)
             if not ok:
@@ -2471,7 +2471,7 @@ class ClipLauncherPanel(QWidget):
             _gain_db = self._volume_to_db(track_volume)
             if abs(_gain_db) > 0.5:
                 p.setPen(QColor(180, 220, 255, 160))
-                from PyQt6.QtGui import QFont
+                from PySide6.QtGui import QFont
                 sf = QFont(p.font())
                 sf.setPointSize(max(6, sf.pointSize() - 2))
                 p.setFont(sf)
@@ -2803,7 +2803,7 @@ class ClipLauncherPanel(QWidget):
         - Ctrl+Click: toggle slot in/out of selection
         - Shift+Click: range select (from last selected to this slot)
         """
-        from PyQt6.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication
         mods = QApplication.keyboardModifiers()
 
         try:

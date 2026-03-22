@@ -503,15 +503,24 @@ def run_checks(py):
 
     checks = []
 
-    # PyQt6
+    # Qt6 GUI (PyQt6 auf Linux/Windows, PySide6 auf macOS)
+    qt_ok = False
+    # Versuche PyQt6 zuerst (bevorzugt auf Linux)
     result = run([py, "-c", "from PyQt6.QtWidgets import QApplication; print('OK')"],
                  capture=True, check=False)
     if result and hasattr(result, 'stdout') and 'OK' in (result.stdout or ''):
-        ok("PyQt6 ✓")
-        checks.append(("PyQt6", True))
+        ok("PyQt6 (Qt6) ✓")
+        qt_ok = True
     else:
-        fail("PyQt6 nicht verfügbar")
-        checks.append(("PyQt6", False))
+        # Fallback: PySide6 (bevorzugt auf macOS)
+        result = run([py, "-c", "from PySide6.QtWidgets import QApplication; print('OK')"],
+                     capture=True, check=False)
+        if result and hasattr(result, 'stdout') and 'OK' in (result.stdout or ''):
+            ok("PySide6 (Qt6) ✓")
+            qt_ok = True
+        else:
+            fail("Kein Qt6 — pip install PyQt6 (oder PySide6 auf macOS)")
+    checks.append(("Qt6", qt_ok))
 
     # numpy
     result = run([py, "-c", "import numpy; print(numpy.__version__)"],
@@ -593,7 +602,7 @@ def run_checks(py):
 def print_final_report(checks, with_rust, py):
     head("🎵 SETUP KOMPLETT — STATUS REPORT")
 
-    critical_ok = all(ok for name, ok in checks if ok is not None and name in ("PyQt6", "numpy"))
+    critical_ok = all(ok for name, ok in checks if ok is not None and name in ("Qt6", "numpy"))
 
     print()
     for name, status in checks:

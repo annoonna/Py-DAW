@@ -20,14 +20,14 @@ from __future__ import annotations
 import logging
 from typing import Optional, TYPE_CHECKING
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox,
     QSpinBox, QDoubleSpinBox, QCheckBox, QPushButton,
     QFrame, QScrollArea, QGroupBox, QGridLayout, QToolButton,
     QSizePolicy, QSlider,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPainter, QPalette, QFont
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QPainter, QPalette, QFont
 
 if TYPE_CHECKING:
     from pydaw.services.project_service import ProjectService
@@ -47,7 +47,7 @@ LAUNCHER_COLORS = [
 
 class ColorPadWidget(QWidget):
     """Mini color picker grid (4x4) like Bitwig's clip color selector."""
-    color_changed = pyqtSignal(int)  # color index
+    color_changed = Signal(int)  # color index
 
     def __init__(self, parent=None):
         super().__init__(parent)

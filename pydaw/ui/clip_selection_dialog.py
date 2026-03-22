@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
@@ -274,7 +274,7 @@ class ClipSelectionDialog(QDialog):
 # Example usage / test
 if __name__ == "__main__":
     import sys
-    from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton
+    from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton
     
     app = QApplication(sys.argv)
     

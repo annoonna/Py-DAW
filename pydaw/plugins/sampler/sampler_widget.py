@@ -14,8 +14,8 @@ from __future__ import annotations
 from pathlib import Path
 import uuid
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
     QLabel, QPushButton, QGroupBox, QComboBox,
     QSlider, QMessageBox, QFileDialog, QCheckBox,
@@ -35,7 +35,7 @@ class SamplerWidget(QWidget):
     """Compact Pro-DAW-Style sampler device."""
 
     # Emitted when this sampler wants to signal something to the device panel
-    status_message = pyqtSignal(str)
+    status_message = Signal(str)
 
     def __init__(self, project_service=None, audio_engine=None, automation_manager=None, parent=None):
         super().__init__(parent)

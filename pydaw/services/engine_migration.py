@@ -45,7 +45,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 try:
-    from PyQt6.QtCore import QObject, pyqtSignal, QSettings
+    from PySide6.QtCore import QObject, Signal, QSettings
     _QT_AVAILABLE = True
 except ImportError:
     _QT_AVAILABLE = False
@@ -133,9 +133,9 @@ class EngineMigrationController(_BASE):
 
     # Qt signals
     if _QT_AVAILABLE:
-        subsystem_changed = pyqtSignal(str, str, str)   # subsystem, new_backend, status
-        migration_error = pyqtSignal(str, str)           # subsystem, error_message
-        rust_default_changed = pyqtSignal(bool)          # is_default
+        subsystem_changed = Signal(str, str, str)   # subsystem, new_backend, status
+        migration_error = Signal(str, str)           # subsystem, error_message
+        rust_default_changed = Signal(bool)          # is_default
 
     # Singleton
     _instance: Optional[EngineMigrationController] = None

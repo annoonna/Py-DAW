@@ -17,8 +17,8 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import Qt, pyqtSignal as Signal, QTimer
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal as Signal, QTimer
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,

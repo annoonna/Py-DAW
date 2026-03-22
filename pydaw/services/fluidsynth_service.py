@@ -10,7 +10,7 @@ import threading
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import QObject, pyqtSignal as Signal
+from PySide6.QtCore import QObject, Signal as Signal
 
 
 class FluidSynthService(QObject):

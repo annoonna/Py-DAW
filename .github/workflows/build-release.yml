@@ -1,7 +1,3 @@
-# .github/workflows/build-release.yml
-# Baut Py_DAW für Linux, macOS und Windows automatisch.
-# Trigger: Tag wie v0.0.20.731 pushen oder manuell starten.
-
 name: Build Release
 
 on:
@@ -19,16 +15,22 @@ jobs:
             platform: linux
             rust_target: x86_64-unknown-linux-gnu
             engine_bin: pydaw_engine
+            qt_package: PyQt6
+            nuitka_plugin: pyqt6
             artifact: ChronoScaleStudio-linux-x86_64
           - os: macos-15
             platform: macos
             rust_target: aarch64-apple-darwin
             engine_bin: pydaw_engine
+            qt_package: PySide6
+            nuitka_plugin: pyside6
             artifact: ChronoScaleStudio-macos-arm64
           - os: windows-latest
             platform: windows
             rust_target: x86_64-pc-windows-msvc
             engine_bin: pydaw_engine.exe
+            qt_package: PyQt6
+            nuitka_plugin: pyqt6
             artifact: ChronoScaleStudio-windows-x86_64
 
     runs-on: ${{ matrix.os }}
@@ -61,7 +63,7 @@ jobs:
       - name: Python Deps
         run: |
           pip install --upgrade pip setuptools wheel
-          pip install PyQt6 numpy scipy sounddevice soundfile mido pydub msgpack
+          pip install ${{ matrix.qt_package }} numpy scipy sounddevice soundfile mido pydub msgpack
           pip install pedalboard numba llvmlite
           pip install nuitka ordered-set
 
@@ -84,7 +86,7 @@ jobs:
           echo "=== Versuche Nuitka Build ==="
           if python -m nuitka \
             --standalone \
-            --enable-plugin=pyqt6 \
+            --enable-plugin=${{ matrix.nuitka_plugin }} \
             --output-dir=build_nuitka \
             --assume-yes-for-download \
             --no-pyi-file \

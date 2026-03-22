@@ -16,8 +16,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional, Any
 
-from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtGui import QColor
+from PySide6.QtCore import QObject, Signal
+from PySide6.QtGui import QColor
 
 
 class LayerState(Enum):
@@ -123,8 +123,8 @@ class LayerManager(QObject):
     """
     
     # Signals
-    layers_changed = pyqtSignal()
-    focused_layer_changed = pyqtSignal(str)  # clip_id
+    layers_changed = Signal()
+    focused_layer_changed = Signal(str)  # clip_id
     
     def __init__(self):
         super().__init__()
@@ -402,7 +402,7 @@ class LayerManager(QObject):
 # Example usage for testing
 if __name__ == "__main__":
     import sys
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     
     app = QApplication(sys.argv)
     

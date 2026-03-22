@@ -11,9 +11,9 @@ Features:
   - Real-time waveform preview
 """
 from __future__ import annotations
-from PyQt6.QtCore import Qt, QPointF, pyqtSignal
-from PyQt6.QtGui import QPainter, QPen, QColor, QPainterPath, QMouseEvent
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QPointF, Signal
+from PySide6.QtGui import QPainter, QPen, QColor, QPainterPath, QMouseEvent
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QCheckBox, QLabel,
     QSizePolicy,
 )
@@ -22,7 +22,7 @@ from PyQt6.QtWidgets import (
 class ScrawlCanvas(QWidget):
     """Waveform drawing canvas — the core pen-tool area."""
 
-    waveform_changed = pyqtSignal()  # Emitted when points change
+    waveform_changed = Signal()  # Emitted when points change
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -239,7 +239,7 @@ class ScrawlCanvas(QWidget):
 class ScrawlEditorWidget(QWidget):
     """Complete Scrawl editor panel: canvas + shape buttons + smooth toggle."""
 
-    waveform_changed = pyqtSignal(list)  # Emits list of (x, y) points
+    waveform_changed = Signal(list)  # Emits list of (x, y) points
 
     def __init__(self, parent=None):
         super().__init__(parent)

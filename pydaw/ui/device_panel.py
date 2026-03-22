@@ -109,7 +109,7 @@ def _qt_is_deleted(obj: Any) -> bool:
         return True
     try:
         # PyQt6 ships sip module as PyQt6.sip
-        from PyQt6 import sip  # type: ignore
+        from PySide6 import sip  # type: ignore
         return bool(sip.isdeleted(obj))
     except Exception:
         try:
@@ -118,9 +118,9 @@ def _qt_is_deleted(obj: Any) -> bool:
         except Exception:
             return False
 
-from PyQt6.QtCore import Qt, QObject, QEvent, QSize, QTimer
-from PyQt6.QtGui import QFontMetrics, QKeySequence, QShortcut
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QObject, QEvent, QSize, QTimer
+from PySide6.QtGui import QFontMetrics, QKeySequence, QShortcut
+from PySide6.QtWidgets import (
     QWidget,
     QLabel,
     QPushButton,
@@ -271,7 +271,7 @@ class _DropForwardFilter(QObject):
         behavior Bitwig-like without touching audio/core logic.
         """
         try:
-            from PyQt6.QtWidgets import QWidget
+            from PySide6.QtWidgets import QWidget
             w = obj if isinstance(obj, QWidget) else None
             while w is not None:
                 try:
@@ -865,8 +865,8 @@ class _DeviceCard(QFrame):
             if not self.device_id or not self.fx_kind:
                 return super().mouseMoveEvent(event)
             # Start internal drag for reorder / cross-track move (v516)
-            from PyQt6.QtCore import QMimeData
-            from PyQt6.QtGui import QDrag
+            from PySide6.QtCore import QMimeData
+            from PySide6.QtGui import QDrag
             drag = QDrag(self)
             mime = QMimeData()
             payload = json.dumps({
@@ -1373,7 +1373,7 @@ class DevicePanel(QWidget):
 
         # v0.0.20.643: Grouped dropdown menus instead of 9 squeezed buttons (AP8 UI fix)
         # "View" dropdown: collapse/expand/focus actions
-        from PyQt6.QtWidgets import QToolButton as _QTB, QMenu as _QM
+        from PySide6.QtWidgets import QToolButton as _QTB, QMenu as _QM
         self._btn_view_menu = _QTB(self)
         self._btn_view_menu.setText("👁 View")
         self._btn_view_menu.setToolTip("View Controls: Collapse, Expand, Focus")
@@ -2896,7 +2896,7 @@ class DevicePanel(QWidget):
     def _show_layer_add_fx_menu(self) -> None:
         """Show a popup menu to add Audio-FX inside the current zoomed layer."""
         try:
-            from PyQt6.QtGui import QCursor
+            from PySide6.QtGui import QCursor
             ctx = self._get_layer_context()
             if ctx is None:
                 return
@@ -4591,7 +4591,7 @@ class DevicePanel(QWidget):
                     )
 
                     def _load_sf2(_=False, _layer=layer, _lbl=lbl_file):
-                        from PyQt6.QtWidgets import QFileDialog
+                        from PySide6.QtWidgets import QFileDialog
                         path, _ = QFileDialog.getOpenFileName(
                             self, "SF2 Datei wählen", "",
                             "SoundFont (*.sf2 *.SF2);;Alle (*)"

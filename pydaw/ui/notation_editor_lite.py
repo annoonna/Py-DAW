@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import math
 
-from PyQt6.QtCore import Qt, QPointF
-from PyQt6.QtGui import QPen, QFont, QPainter, QBrush
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QPointF
+from PySide6.QtGui import QPen, QFont, QPainter, QBrush
+from PySide6.QtWidgets import (
     QGraphicsScene,
     QGraphicsEllipseItem,
     QGraphicsTextItem,

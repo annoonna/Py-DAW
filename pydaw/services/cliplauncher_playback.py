@@ -20,7 +20,7 @@ import math
 import threading
 from typing import Any, Dict, List, Optional, Tuple
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 try:
     import numpy as np  # type: ignore
@@ -72,7 +72,7 @@ class _Voice:
 
 
 class ClipLauncherPlaybackService(QObject):
-    active_slots_changed = pyqtSignal(list)  # slot_key list
+    active_slots_changed = Signal(list)  # slot_key list
 
     """Realtime ClipLauncher playback through AudioEngine pull-sources.
 
@@ -120,7 +120,7 @@ class ClipLauncherPlaybackService(QObject):
         self._follow_action_queue: List[tuple] = []
         self._follow_timer = None
         try:
-            from PyQt6.QtCore import QTimer
+            from PySide6.QtCore import QTimer
             self._follow_timer = QTimer()
             self._follow_timer.setInterval(100)
             self._follow_timer.timeout.connect(self._process_follow_actions)

@@ -11,8 +11,8 @@ code stays readable and we only touch imports.
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt as _Qt
-from PyQt6.QtGui import QPainter as _QPainter, QKeySequence as _QKeySequence
+from PySide6.QtCore import Qt as _Qt
+from PySide6.QtGui import QPainter as _QPainter, QKeySequence as _QKeySequence
 
 
 class _QtShim:

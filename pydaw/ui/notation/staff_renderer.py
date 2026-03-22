@@ -13,9 +13,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Optional
 
-from PyQt6.QtCore import Qt, QPointF, QRectF
-from PyQt6.QtGui import QPainter, QPen, QBrush, QFont, QColor
-from PyQt6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import Qt, QPointF, QRectF
+from PySide6.QtGui import QPainter, QPen, QBrush, QFont, QColor
+from PySide6.QtWidgets import QApplication, QWidget
 
 
 @dataclass(frozen=True)

@@ -17,9 +17,9 @@ from __future__ import annotations
 import math
 import time
 
-from PyQt6.QtWidgets import QWidget
-from PyQt6.QtCore import Qt, QRectF
-from PyQt6.QtGui import (
+from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtGui import (
     QPainter, QPen, QBrush, QColor, QLinearGradient, QFont, QFontMetrics,
 )
 
@@ -329,7 +329,7 @@ class VUMeterWithLabel(QWidget):
     def __init__(self, label: str = "", parent: QWidget | None = None):
         super().__init__(parent)
 
-        from PyQt6.QtWidgets import QVBoxLayout, QLabel
+        from PySide6.QtWidgets import QVBoxLayout, QLabel
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -354,8 +354,8 @@ class VUMeterWithLabel(QWidget):
 # Quick test
 if __name__ == "__main__":
     import sys
-    from PyQt6.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget
-    from PyQt6.QtCore import QTimer
+    from PySide6.QtWidgets import QApplication, QMainWindow, QHBoxLayout, QWidget
+    from PySide6.QtCore import QTimer
     import random
 
     app = QApplication(sys.argv)

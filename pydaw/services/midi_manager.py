@@ -24,7 +24,7 @@ import queue
 from dataclasses import dataclass
 from typing import Callable, Optional, List, Dict, Tuple
 
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+from PySide6.QtCore import QObject, Signal, QTimer
 
 try:
     import mido  # type: ignore
@@ -46,19 +46,19 @@ class _ActiveNote:
 
 class MidiManager(QObject):
     # Backwards-compat status text
-    message_received = pyqtSignal(str)
+    message_received = Signal(str)
     # Raw message object (mido.Message) for services like MidiMappingService
-    message_obj = pyqtSignal(object)
+    message_obj = Signal(object)
 
     # Live routing outputs (Pro-DAW-like triple output – at least for editors)
-    live_note_on = pyqtSignal(str, str, int, int, int, float)   # clip_id, track_id, pitch, velocity, channel, start_clip_beats
-    live_note_off = pyqtSignal(str, str, int, int)              # clip_id, track_id, pitch, channel
+    live_note_on = Signal(str, str, int, int, int, float)   # clip_id, track_id, pitch, velocity, channel, start_clip_beats
+    live_note_off = Signal(str, str, int, int)              # clip_id, track_id, pitch, channel
 
     # Panic / No-Hang
-    panic = pyqtSignal(str)  # reason text
+    panic = Signal(str)  # reason text
 
     # v0.0.20.406: Signal emitted when the set of connected inputs changes
-    inputs_changed = pyqtSignal()
+    inputs_changed = Signal()
 
     def __init__(
         self,

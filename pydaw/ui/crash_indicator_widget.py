@@ -32,11 +32,11 @@ from enum import Enum, auto
 from typing import Optional
 
 try:
-    from PyQt6.QtWidgets import (
+    from PySide6.QtWidgets import (
         QWidget, QLabel, QHBoxLayout, QMenu, QToolTip,
     )
-    from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QSize
-    from PyQt6.QtGui import QColor, QPainter, QBrush, QPen, QFont, QAction
+    from PySide6.QtCore import Qt, Signal, QTimer, QSize
+    from PySide6.QtGui import QColor, QPainter, QBrush, QPen, QFont, QAction
     _QT = True
 except ImportError:
     _QT = False
@@ -71,10 +71,10 @@ if _QT:
             remove_requested(track_id, slot_id)
         """
 
-        reload_requested = pyqtSignal(str, str)   # track_id, slot_id
-        factory_reset_requested = pyqtSignal(str, str)  # restart without state
-        disable_requested = pyqtSignal(str, str)
-        remove_requested = pyqtSignal(str, str)
+        reload_requested = Signal(str, str)   # track_id, slot_id
+        factory_reset_requested = Signal(str, str)  # restart without state
+        disable_requested = Signal(str, str)
+        remove_requested = Signal(str, str)
 
         # Colors
         _COLOR_RUNNING = QColor("#4caf50")     # green
@@ -270,7 +270,7 @@ if _QT:
         Displays: "🛡️ 3/5 sandboxed" or "⚠️ 1 crashed"
         """
 
-        details_requested = pyqtSignal()  # user wants to see details
+        details_requested = Signal()  # user wants to see details
 
         def __init__(self, parent: Optional[QWidget] = None):
             super().__init__(parent)

@@ -23,8 +23,8 @@ import logging
 import os
 from typing import Any, Callable, Dict, List, Optional
 
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -53,7 +53,7 @@ def _qt_is_deleted(obj: Any) -> bool:
     if obj is None:
         return True
     try:
-        from PyQt6 import sip  # type: ignore
+        from PySide6 import sip  # type: ignore
         return bool(sip.isdeleted(obj))
     except Exception:
         try:
@@ -83,8 +83,8 @@ class PresetBrowserWidget(QWidget):
         state_changed(): Emitted when state was modified (for auto-save triggers).
     """
 
-    preset_loaded = pyqtSignal(str)
-    state_changed = pyqtSignal()
+    preset_loaded = Signal(str)
+    state_changed = Signal()
 
     def __init__(
         self,

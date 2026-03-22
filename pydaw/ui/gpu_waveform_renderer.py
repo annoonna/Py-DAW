@@ -1,23 +1,25 @@
-"""GPU-accelerated Waveform Renderer (v0.0.20.15).
+"""GPU-accelerated Waveform Renderer (v0.0.20.733).
 
-Offloads waveform/clip rendering to the GPU via OpenGL, freeing CPU
-for audio processing (Essentia, time-stretch, etc.).
+Cross-platform rendering:
+    - Linux:   OpenGL (QOpenGLWidget) → QPainter fallback
+    - Windows: OpenGL (QOpenGLWidget) → QPainter fallback
+    - macOS:   QPainter (OpenGL deprecated) → wgpu/Metal (future)
 
 Architecture:
     ┌─────────────┐                      ┌──────────┐
     │  CPU Thread  │   VBO upload once    │   GPU    │
-    │  (waveform   │ ──────────────────▶ │  OpenGL  │
-    │   data prep) │   per file change   │  render  │
+    │  (waveform   │ ──────────────────▶ │  render  │
+    │   data prep) │   per file change   │  (auto)  │
     └─────────────┘                      └──────────┘
 
 Features:
 - Transparent overlay hotfix (v0.0.20.15) so grid stays visible
-
-- QOpenGLWidget-based arranger overlay
+- QOpenGLWidget-based arranger overlay (Linux/Windows)
+- wgpu/Metal support detection (macOS)
 - Waveform VBO cache (upload once, render many)
 - Batch clip rendering in single draw call
 - Playhead cursor as a GL line
-- Fallback to QPainter if OpenGL unavailable
+- Fallback to QPainter if GPU unavailable
 
 Usage:
     # In arranger, replace custom paint with:
@@ -28,6 +30,8 @@ Usage:
 from __future__ import annotations
 
 import math
+import os
+import sys
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -36,20 +40,43 @@ try:
 except Exception:
     np = None
 
-from PyQt6.QtCore import Qt, QRectF, QTimer
-from PyQt6.QtGui import QColor, QPainter, QPen, QSurfaceFormat
-from PyQt6.QtWidgets import QWidget
+from PySide6.QtCore import Qt, QRectF, QTimer
+from PySide6.QtGui import QColor, QPainter, QPen, QSurfaceFormat
+from PySide6.QtWidgets import QWidget
 
-# Try OpenGL imports
+# ── Platform-aware GPU backend selection ──
+
+_PLATFORM = sys.platform  # 'linux', 'darwin', 'win32'
+_IS_MACOS = _PLATFORM == "darwin"
+
+# OpenGL: Available on Linux/Windows, deprecated on macOS
 _GL_AVAILABLE = False
-try:
-    from PyQt6.QtOpenGLWidgets import QOpenGLWidget
-    from PyQt6.QtOpenGL import (
-        QOpenGLBuffer, QOpenGLShaderProgram, QOpenGLShader,
-    )
-    _GL_AVAILABLE = True
-except ImportError:
+if not _IS_MACOS:
+    # Linux/Windows: Use OpenGL
+    try:
+        from PySide6.QtOpenGLWidgets import QOpenGLWidget
+        from PySide6.QtOpenGL import (
+            QOpenGLBuffer, QOpenGLShaderProgram, QOpenGLShader,
+        )
+        _GL_AVAILABLE = True
+    except ImportError:
+        QOpenGLWidget = QWidget  # type: ignore
+else:
+    # macOS: Skip OpenGL (deprecated since 10.14)
     QOpenGLWidget = QWidget  # type: ignore
+
+# wgpu/Metal: Available on macOS (and optionally Linux/Windows)
+_WGPU_AVAILABLE = False
+try:
+    import wgpu  # noqa: F401
+    _WGPU_AVAILABLE = True
+except ImportError:
+    pass
+
+# Effective rendering strategy
+_GPU_ENABLED = os.environ.get("PYDAW_GPU_WAVEFORMS", "1") == "1"
+_USE_METAL = _IS_MACOS and _WGPU_AVAILABLE and _GPU_ENABLED
+_USE_GL = _GL_AVAILABLE and _GPU_ENABLED and not _IS_MACOS
 
 from pydaw.utils.logging_setup import get_logger
 
@@ -172,7 +199,7 @@ void main() {
 """
 
 
-class WaveformGLRenderer(QOpenGLWidget if _GL_AVAILABLE else QWidget):
+class WaveformGLRenderer(QOpenGLWidget if _USE_GL else QWidget):
     """GPU-accelerated waveform overlay for the arranger.
 
     Renders waveform outlines and clip backgrounds using OpenGL.
@@ -180,7 +207,7 @@ class WaveformGLRenderer(QOpenGLWidget if _GL_AVAILABLE else QWidget):
     """
 
     def __init__(self, parent=None):
-        if _GL_AVAILABLE:
+        if _USE_GL:
             fmt = QSurfaceFormat()
             fmt.setSamples(4)  # MSAA
             fmt.setSwapInterval(1)  # VSync
@@ -207,7 +234,7 @@ class WaveformGLRenderer(QOpenGLWidget if _GL_AVAILABLE else QWidget):
             super().__init__(parent)
 
         self._gl_initialized = False
-        self._use_gl = _GL_AVAILABLE
+        self._use_gl = _USE_GL
 
         # Clip data for rendering
         self._clips: List[Dict[str, Any]] = []

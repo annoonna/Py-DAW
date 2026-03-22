@@ -20,8 +20,8 @@ This module intentionally stays tiny and dependency-free.
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QRect, Qt
-from PyQt6.QtGui import QColor, QPainter, QPen, QCursor, QPixmap
+from PySide6.QtCore import QRect, Qt
+from PySide6.QtGui import QColor, QPainter, QPen, QCursor, QPixmap
 
 
 def paint_magnifier(p: QPainter, rect: QRect, *, color: QColor) -> None:

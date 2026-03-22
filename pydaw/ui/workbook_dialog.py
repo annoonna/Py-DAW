@@ -19,9 +19,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
 
-from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QAction, QDesktopServices, QKeySequence, QShortcut
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QAction, QDesktopServices, QKeySequence, QShortcut
+from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QLabel,
@@ -710,7 +710,7 @@ class WorkbookDialog(QDialog):
 
         try:
             if source is None:
-                from PyQt6.QtWidgets import QApplication
+                from PySide6.QtWidgets import QApplication
 
                 source = QApplication.activeWindow()
         except Exception:

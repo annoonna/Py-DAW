@@ -66,7 +66,17 @@ try:
 except Exception:
     pass
 
-# --- Graphics backend selection (must happen BEFORE importing PyQt6)
+# --- Qt Backend: PyQt6 (Linux) oder PySide6 (macOS) automatisch wählen
+# Muss VOR allen Qt/pydaw-Imports stehen!
+try:
+    from pydaw.qt_shim import setup_qt_backend
+    _qt_backend = setup_qt_backend()
+    # Nur einmal loggen, nicht spammen
+    print(f"[PyDAW] Qt Backend: {_qt_backend}")
+except Exception as _e:
+    print(f"[PyDAW] Qt-Shim Fehler: {_e}")
+
+# --- Graphics backend selection (must happen BEFORE importing Qt)
 # Linux default: Vulkan (when available). Override via:
 #   PYDAW_GFX_BACKEND=opengl python3 main.py
 try:

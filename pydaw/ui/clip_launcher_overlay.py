@@ -12,9 +12,9 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QPoint, QPropertyAnimation
-from PyQt6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal, QEvent, QPoint, QPropertyAnimation
+from PySide6.QtGui import QDragEnterEvent, QDragMoveEvent, QDropEvent
+from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
     QGraphicsOpacityEffect,
@@ -46,7 +46,7 @@ class ClipLauncherOverlay(QFrame):
     """Full-viewport overlay that shows a clip-launcher grid and accepts drops."""
 
     # file_path, track_id, start_beats, slot_key
-    request_import_audio = pyqtSignal(str, str, float, str)
+    request_import_audio = Signal(str, str, float, str)
 
     def __init__(self, project_service, transport=None, parent: QWidget | None = None):
         super().__init__(parent)

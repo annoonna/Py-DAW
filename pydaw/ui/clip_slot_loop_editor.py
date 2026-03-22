@@ -10,7 +10,7 @@ Ermöglicht das Festlegen von Loop-Bereichen direkt im Slot:
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
@@ -21,8 +21,8 @@ from PyQt6.QtWidgets import (
     QWidget,
     QGroupBox,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QRectF, QPointF
-from PyQt6.QtGui import QPainter, QPen, QBrush, QColor, QMouseEvent
+from PySide6.QtCore import Qt, Signal, QRectF, QPointF
+from PySide6.QtGui import QPainter, QPen, QBrush, QColor, QMouseEvent
 
 if TYPE_CHECKING:
     from pydaw.model.project import AudioClip, MidiClip
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class LoopTimelineWidget(QWidget):
     """Interactive Timeline für Loop-Bereich Festlegung."""
     
-    loop_changed = pyqtSignal(float, float, float)  # start, end, offset
+    loop_changed = Signal(float, float, float)  # start, end, offset
     
     def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)

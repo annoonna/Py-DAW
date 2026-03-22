@@ -22,7 +22,7 @@ import traceback
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QTabBar,
@@ -33,8 +33,8 @@ from PyQt6.QtWidgets import (
     QFileDialog,
     QSizePolicy,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer
-from PyQt6.QtGui import QAction, QMouseEvent, QIcon, QPixmap, QPainter, QColor, QBrush
+from PySide6.QtCore import Qt, Signal, QTimer
+from PySide6.QtGui import QAction, QMouseEvent, QIcon, QPixmap, QPainter, QColor, QBrush
 
 from pydaw.services.project_tab_service import ProjectTabService
 from pydaw.ui.cross_project_drag import MIME_CROSS_PROJECT
@@ -148,14 +148,14 @@ class ProjectTabBar(QWidget):
     """
 
     # Signals for MainWindow integration
-    request_switch_tab = pyqtSignal(int)          # tab index
-    request_new_project = pyqtSignal()            # new empty project
-    request_open_project = pyqtSignal()           # open file dialog
-    request_close_tab = pyqtSignal(int)           # tab index
-    request_save_tab = pyqtSignal(int)            # tab index
-    request_save_tab_as = pyqtSignal(int)         # tab index
-    request_rename_tab = pyqtSignal(int, str)     # tab index, new name
-    request_rust_badge_clicked = pyqtSignal()
+    request_switch_tab = Signal(int)          # tab index
+    request_new_project = Signal()            # new empty project
+    request_open_project = Signal()           # open file dialog
+    request_close_tab = Signal(int)           # tab index
+    request_save_tab = Signal(int)            # tab index
+    request_save_tab_as = Signal(int)         # tab index
+    request_rename_tab = Signal(int, str)     # tab index, new name
+    request_rust_badge_clicked = Signal()
 
     # Cache dirty dot icons so they're only generated once
     _dirty_icon: QIcon | None = None

@@ -191,7 +191,7 @@ def harden_signal_slots() -> bool:
         return True
 
     try:
-        from PyQt6.QtCore import pyqtBoundSignal  # type: ignore
+        from PySide6.QtCore import pyqtBoundSignal  # type: ignore
     except Exception:
         return False
 

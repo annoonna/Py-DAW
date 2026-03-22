@@ -17,7 +17,7 @@ import traceback
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -30,8 +30,8 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QToolButton,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QMimeData
-from PyQt6.QtGui import QDrag, QColor
+from PySide6.QtCore import Qt, Signal, QMimeData
+from PySide6.QtGui import QDrag, QColor
 
 from pydaw.services.project_tab_service import ProjectTabService
 
@@ -44,9 +44,9 @@ class ProjectBrowserWidget(QWidget):
     """
 
     # Signals
-    request_open_in_tab = pyqtSignal(str)           # path (to open project in new tab)
-    request_import_tracks = pyqtSignal(str, list)    # path, list of track_ids
-    status_message = pyqtSignal(str)
+    request_open_in_tab = Signal(str)           # path (to open project in new tab)
+    request_import_tracks = Signal(str, list)    # path, list of track_ids
+    status_message = Signal(str)
 
     def __init__(
         self,

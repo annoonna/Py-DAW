@@ -14,7 +14,7 @@ import os
 import sys
 import traceback
 
-from PyQt6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 
 def _main(argv: list[str] | None = None) -> int:
@@ -27,7 +27,7 @@ def _main(argv: list[str] | None = None) -> int:
     try:
         # Import *inside* the try so we can show a helpful dialog on failure.
         from pydaw.notation.gui.score_view import ScoreView  # noqa: WPS433
-        from PyQt6.QtWidgets import QMainWindow
+        from PySide6.QtWidgets import QMainWindow
 
         w = QMainWindow()
         w.setWindowTitle("PyDAW — Notation Preview (WIP)")

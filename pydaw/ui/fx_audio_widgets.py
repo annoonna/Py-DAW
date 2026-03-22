@@ -13,8 +13,8 @@ from __future__ import annotations
 import math
 from typing import Any, Optional
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
     QDial, QSlider, QDoubleSpinBox, QSpinBox, QComboBox,
     QCheckBox, QPushButton, QGroupBox, QMenu,
@@ -213,7 +213,7 @@ class _AudioFxBase(QWidget):
             except Exception:
                 pass
             try:
-                from PyQt6.QtWidgets import QApplication
+                from PySide6.QtWidgets import QApplication
                 for w in QApplication.topLevelWidgets():
                     sb = getattr(w, 'statusBar', None)
                     if callable(sb):

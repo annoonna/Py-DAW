@@ -32,7 +32,7 @@ except ImportError:
     _NP_AVAILABLE = False
 
 try:
-    from PyQt6.QtCore import QObject, pyqtSignal
+    from PySide6.QtCore import QObject, Signal
     _QT_AVAILABLE = True
 except ImportError:
     _QT_AVAILABLE = False
@@ -113,8 +113,8 @@ class EnginePerformanceBenchmark(_BASE):
     """
 
     if _QT_AVAILABLE:
-        progress = pyqtSignal(int, int, str)   # current, total, message
-        finished = pyqtSignal(object)           # BenchmarkReport
+        progress = Signal(int, int, str)   # current, total, message
+        finished = Signal(object)           # BenchmarkReport
 
     def __init__(self):
         if _QT_AVAILABLE:
@@ -667,7 +667,7 @@ class EnginePerformanceBenchmark(_BASE):
         """
         count = 0
         try:
-            from PyQt6.QtWidgets import QApplication
+            from PySide6.QtWidgets import QApplication
             app = QApplication.instance()
             if app is not None:
                 for widget in app.topLevelWidgets():

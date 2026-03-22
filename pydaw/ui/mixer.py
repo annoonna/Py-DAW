@@ -16,9 +16,9 @@ from __future__ import annotations
 import math
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QTimer, QRectF
-from PyQt6.QtGui import QPainter, QColor, QLinearGradient, QPen
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer, QRectF
+from PySide6.QtGui import QPainter, QColor, QLinearGradient, QPen
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea, QFrame,
     QSlider, QComboBox, QPushButton, QSizePolicy, QMenu, QInputDialog,
     QDial, QDialog, QGridLayout, QCheckBox, QDialogButtonBox,
@@ -117,7 +117,7 @@ class _RoutingOverlay(QWidget):
         if not self._routes and not self._sc_routes:
             return
         try:
-            from PyQt6.QtGui import QPainterPath
+            from PySide6.QtGui import QPainterPath
             p = QPainter(self)
             p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 

@@ -13,9 +13,9 @@ Design intent:
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QRectF
-from PyQt6.QtGui import QColor, QFont, QPainter, QPen, QRegion, QLinearGradient
-from PyQt6.QtWidgets import QToolButton
+from PySide6.QtCore import Qt, QRectF
+from PySide6.QtGui import QColor, QFont, QPainter, QPen, QRegion, QLinearGradient
+from PySide6.QtWidgets import QToolButton
 
 
 class RustLogoButton(QToolButton):

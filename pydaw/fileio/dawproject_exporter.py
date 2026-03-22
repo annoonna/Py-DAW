@@ -45,12 +45,12 @@ from pydaw.version import __version__
 log = logging.getLogger(__name__)
 
 try:  # optional UI integration
-    from PyQt6.QtCore import QObject, QRunnable, pyqtSignal
+    from PySide6.QtCore import QObject, QRunnable, Signal
     PYQT_AVAILABLE = True
 except Exception:  # pragma: no cover
     QObject = object  # type: ignore[assignment]
     QRunnable = object  # type: ignore[assignment]
-    pyqtSignal = None  # type: ignore[assignment]
+    Signal = None  # type: ignore[assignment]
     PYQT_AVAILABLE = False
 
 ProgressCallback = Callable[[int, str], None]
@@ -815,9 +815,9 @@ if PYQT_AVAILABLE:
     class DawProjectExportSignals(QObject):
         """Signals for a non-blocking export QRunnable."""
 
-        progress = pyqtSignal(int, str)
-        finished = pyqtSignal(object)
-        error = pyqtSignal(str)
+        progress = Signal(int, str)
+        finished = Signal(object)
+        error = Signal(str)
 
 
     class DawProjectExportRunnable(QRunnable):

@@ -16,9 +16,9 @@ from __future__ import annotations
 
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QIcon
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor, QIcon
+from PySide6.QtWidgets import (
     QCheckBox,
     QColorDialog,
     QHBoxLayout,
@@ -55,11 +55,11 @@ class LayerItemWidget(QWidget):
         color_changed: User changed layer color
     """
     
-    focus_requested = pyqtSignal(str)  # clip_id
-    lock_toggled = pyqtSignal(str, bool)  # clip_id, locked
-    visibility_toggled = pyqtSignal(str, bool)  # clip_id, visible
-    opacity_changed = pyqtSignal(str, float)  # clip_id, opacity
-    color_changed = pyqtSignal(str, QColor)  # clip_id, color
+    focus_requested = Signal(str)  # clip_id
+    lock_toggled = Signal(str, bool)  # clip_id, locked
+    visibility_toggled = Signal(str, bool)  # clip_id, visible
+    opacity_changed = Signal(str, float)  # clip_id, opacity
+    color_changed = Signal(str, QColor)  # clip_id, color
     
     def __init__(self, layer: GhostLayer, parent=None):
         super().__init__(parent)
@@ -209,7 +209,7 @@ class LayerPanel(QWidget):
         layer_added: User requested to add a new layer
     """
     
-    layer_added = pyqtSignal()
+    layer_added = Signal()
     
     def __init__(self, layer_manager: LayerManager, parent=None):
         super().__init__(parent)
@@ -370,7 +370,7 @@ class LayerPanel(QWidget):
 # Test / Demo
 if __name__ == "__main__":
     import sys
-    from PyQt6.QtWidgets import QApplication, QMainWindow
+    from PySide6.QtWidgets import QApplication, QMainWindow
     
     app = QApplication(sys.argv)
     

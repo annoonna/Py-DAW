@@ -14,7 +14,7 @@ from __future__ import annotations
 import os
 import time
 
-from PyQt6.QtCore import QObject, QTimer, pyqtSignal
+from PySide6.QtCore import QObject, QTimer, Signal
 
 
 class CpuUsageMonitor(QObject):
@@ -24,7 +24,7 @@ class CpuUsageMonitor(QObject):
     We normalize by logical CPU count to present a stable 0..100% range.
     """
 
-    updated = pyqtSignal(float)  # percent
+    updated = Signal(float)  # percent
 
     def __init__(self, interval_ms: int = 1000, parent: QObject | None = None):
         super().__init__(parent)

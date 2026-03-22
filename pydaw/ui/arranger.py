@@ -14,7 +14,7 @@ from __future__ import annotations
 import json
 import logging
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QVBoxLayout,
@@ -34,8 +34,8 @@ from PyQt6.QtWidgets import (
     QFrame,
     QToolTip,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QEvent, QMimeData, QObject, QPoint
-from PyQt6.QtGui import QDrag
+from PySide6.QtCore import Qt, Signal, QEvent, QMimeData, QObject, QPoint
+from PySide6.QtGui import QDrag
 
 from pydaw.ui.cross_project_drag import MIME_CROSS_PROJECT, create_track_drag_data
 from pydaw.ui.smartdrop_rules import evaluate_plugin_drop_target
@@ -280,18 +280,18 @@ class _RowGestureFilter(QObject):
 
 
 class TrackList(QWidget):
-    track_selected = pyqtSignal(str)
-    selected_track_changed = pyqtSignal(str)  # compatibility alias
-    status_message = pyqtSignal(str, int)
+    track_selected = Signal(str)
+    selected_track_changed = Signal(str)  # compatibility alias
+    status_message = Signal(str, int)
 
     # Phase 2 (Track-Header ▾): request helpers (handled by MainWindow)
-    request_open_browser_tab = pyqtSignal(str, str)  # track_id, tab_key ('instruments'|'effects'|'samples')
-    request_show_device_panel = pyqtSignal(str)      # track_id
+    request_open_browser_tab = Signal(str, str)  # track_id, tab_key ('instruments'|'effects'|'samples')
+    request_show_device_panel = Signal(str)      # track_id
     # Phase 3: Track-Header ▾ → 1-click insert into device chains
-    request_add_device = pyqtSignal(str, str, str)   # track_id, kind ('instrument'|'note_fx'|'audio_fx'), plugin_id
-    request_smartdrop_instrument_to_track = pyqtSignal(str, dict)  # track_id, payload
-    request_smartdrop_fx_to_track = pyqtSignal(str, dict)  # track_id, payload
-    request_smartdrop_instrument_morph_guard = pyqtSignal(str, dict)  # track_id, payload (non-mutating preview/validate/apply stub)
+    request_add_device = Signal(str, str, str)   # track_id, kind ('instrument'|'note_fx'|'audio_fx'), plugin_id
+    request_smartdrop_instrument_to_track = Signal(str, dict)  # track_id, payload
+    request_smartdrop_fx_to_track = Signal(str, dict)  # track_id, payload
+    request_smartdrop_instrument_morph_guard = Signal(str, dict)  # track_id, payload (non-mutating preview/validate/apply stub)
 
     def __init__(self, project: ProjectService, parent=None):
         super().__init__(parent)
@@ -774,7 +774,7 @@ class TrackList(QWidget):
 
             def ask_search() -> None:
                 try:
-                    from PyQt6.QtWidgets import QInputDialog
+                    from PySide6.QtWidgets import QInputDialog
                     txt, ok = QInputDialog.getText(self, "Search", "Filter:", text=str(state.get("q") or ""))
                     if ok:
                         state["q"] = str(txt or "")
@@ -2023,8 +2023,8 @@ class TrackList(QWidget):
         - NOTE INPUTS: No input, All ins, Computer Keyboard, + connected controllers
         - TRACKS: other tracks for MIDI-through routing
         """
-        from PyQt6.QtWidgets import QMenu
-        from PyQt6.QtGui import QAction
+        from PySide6.QtWidgets import QMenu
+        from PySide6.QtGui import QAction
 
         menu = QMenu(btn)
         menu.setStyleSheet(
@@ -2238,16 +2238,16 @@ class TrackList(QWidget):
 
 
 class ArrangerView(QWidget):
-    clip_activated = pyqtSignal(str)
-    clip_selected = pyqtSignal(str)
-    request_rename_clip = pyqtSignal(str)
-    request_duplicate_clip = pyqtSignal(str)
-    request_delete_clip = pyqtSignal(str)
-    status_message = pyqtSignal(str, int)  # (message, timeout_ms) - v0.0.19.7.0
-    view_range_changed = pyqtSignal(float, float)  # start_beat, end_beat
+    clip_activated = Signal(str)
+    clip_selected = Signal(str)
+    request_rename_clip = Signal(str)
+    request_duplicate_clip = Signal(str)
+    request_delete_clip = Signal(str)
+    status_message = Signal(str, int)  # (message, timeout_ms) - v0.0.19.7.0
+    view_range_changed = Signal(float, float)  # start_beat, end_beat
 
     # Drag&Drop Overlay import: (file_path, track_id, start_beats, slot_key)
-    request_import_audio_file = pyqtSignal(str, str, float, str)
+    request_import_audio_file = Signal(str, str, float, str)
 
     def __init__(self, project: ProjectService, parent=None):
         super().__init__(parent)
@@ -2304,10 +2304,10 @@ class ArrangerView(QWidget):
         # when canvas resizes (e.g. on loop toggle / clip changes)
         class _StableScrollArea(QScrollArea):
             def sizeHint(self):
-                from PyQt6.QtCore import QSize
+                from PySide6.QtCore import QSize
                 return QSize(400, 200)
             def minimumSizeHint(self):
-                from PyQt6.QtCore import QSize
+                from PySide6.QtCore import QSize
                 return QSize(0, 0)
 
         self.scroll = _StableScrollArea()

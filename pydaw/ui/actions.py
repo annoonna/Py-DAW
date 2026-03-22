@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PyQt6.QtGui import QAction, QKeySequence
-from PyQt6.QtCore import QObject, Qt
+from PySide6.QtGui import QAction, QKeySequence
+from PySide6.QtCore import QObject, Qt
 
 
 @dataclass

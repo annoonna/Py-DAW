@@ -26,9 +26,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from PyQt6.QtCore import Qt, QRect, pyqtSignal as Signal
-from PyQt6.QtGui import QGuiApplication, QCloseEvent
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QRect, Signal as Signal
+from PySide6.QtGui import QGuiApplication, QCloseEvent
+from PySide6.QtWidgets import (
     QApplication,
     QDockWidget,
     QHBoxLayout,

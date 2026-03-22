@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from typing import Optional, Dict, Set
 
-from PyQt6.QtCore import QObject, Qt, QEvent, pyqtSignal
+from PySide6.QtCore import QObject, Qt, QEvent, Signal
 
 
 # Bitwig-style MIDI mapping (semitone offset from base octave C)
@@ -117,12 +117,12 @@ class ComputerKeyboardMidi(QObject):
     """
 
     # Emitted when octave changes (for UI display)
-    octave_changed = pyqtSignal(int)
+    octave_changed = Signal(int)
     # Emitted when enabled/disabled
-    enabled_changed = pyqtSignal(bool)
+    enabled_changed = Signal(bool)
     # v0.0.20.610: Emitted on key press/release for overlay highlighting
-    key_pressed = pyqtSignal(int)   # Qt key code
-    key_released = pyqtSignal(int)  # Qt key code
+    key_pressed = Signal(int)   # Qt key code
+    key_released = Signal(int)  # Qt key code
 
     def __init__(self, midi_manager=None, parent: Optional[QObject] = None):
         super().__init__(parent)
@@ -185,7 +185,7 @@ class ComputerKeyboardMidi(QObject):
 
         # Don't capture when text-input widgets have focus
         try:
-            from PyQt6.QtWidgets import QApplication, QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox
+            from PySide6.QtWidgets import QApplication, QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox
             focus = QApplication.focusWidget()
             if isinstance(focus, (QLineEdit, QTextEdit, QPlainTextEdit, QSpinBox, QDoubleSpinBox, QComboBox)):
                 return False

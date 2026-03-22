@@ -20,7 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from PyQt6.QtCore import QPointF, Qt
+from PySide6.QtCore import QPointF, Qt
 
 from pydaw.model.midi import MidiNote
 

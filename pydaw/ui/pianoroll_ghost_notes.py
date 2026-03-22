@@ -20,9 +20,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QRectF
-from PyQt6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
-from PyQt6.QtCore import Qt
+from PySide6.QtCore import QRectF
+from PySide6.QtGui import QBrush, QColor, QPainter, QPainterPath, QPen
+from PySide6.QtCore import Qt
 
 if TYPE_CHECKING:
     from pydaw.ui.pianoroll_canvas import PianoRollCanvas
@@ -261,7 +261,7 @@ def integrate_ghost_notes_rendering(canvas_instance):
     def new_paint_event(event):
         """Enhanced paintEvent with ghost notes support."""
         # Create painter
-        from PyQt6.QtGui import QPainter
+        from PySide6.QtGui import QPainter
         
         painter = QPainter(canvas_instance)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -285,9 +285,9 @@ def integrate_ghost_notes_rendering(canvas_instance):
 # Example standalone test
 if __name__ == "__main__":
     import sys
-    from PyQt6.QtWidgets import QApplication, QMainWindow
-    from PyQt6.QtGui import QPainter, QColor
-    from PyQt6.QtCore import QRectF
+    from PySide6.QtWidgets import QApplication, QMainWindow
+    from PySide6.QtGui import QPainter, QColor
+    from PySide6.QtCore import QRectF
     
     # This would need actual PianoRollCanvas and ProjectService to run
     print("Ghost Notes Renderer - Test Mode")

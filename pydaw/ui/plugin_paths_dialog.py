@@ -14,8 +14,8 @@ import os
 from pathlib import Path
 from typing import List
 
-from PyQt6.QtCore import QSettings
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import QSettings
+from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QTabWidget, QWidget, QListWidget,
     QPushButton, QFileDialog, QLabel
 )

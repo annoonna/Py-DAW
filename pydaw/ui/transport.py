@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QPushButton,
@@ -12,27 +12,27 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QSizePolicy,
 )
-from PyQt6.QtCore import pyqtSignal, Qt
+from PySide6.QtCore import Signal, Qt
 
 
 
 class TransportPanel(QWidget):
-    bpm_changed = pyqtSignal(float)
+    bpm_changed = Signal(float)
 
-    play_clicked = pyqtSignal()
-    stop_clicked = pyqtSignal()
-    rew_clicked = pyqtSignal()
-    ff_clicked = pyqtSignal()
-    record_clicked = pyqtSignal(bool)
+    play_clicked = Signal()
+    stop_clicked = Signal()
+    rew_clicked = Signal()
+    ff_clicked = Signal()
+    record_clicked = Signal(bool)
 
-    loop_toggled = pyqtSignal(bool)
-    punch_toggled = pyqtSignal(bool)
-    pre_roll_changed = pyqtSignal(int)
-    post_roll_changed = pyqtSignal(int)
+    loop_toggled = Signal(bool)
+    punch_toggled = Signal(bool)
+    pre_roll_changed = Signal(int)
+    post_roll_changed = Signal(int)
 
-    time_signature_changed = pyqtSignal(str)
-    metronome_toggled = pyqtSignal(bool)
-    count_in_changed = pyqtSignal(int)
+    time_signature_changed = Signal(str)
+    metronome_toggled = Signal(bool)
+    count_in_changed = Signal(int)
 
     def __init__(self, parent=None):
         super().__init__(parent)

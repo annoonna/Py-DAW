@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional, Any
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 
 class SamplerRegistry(QObject):
@@ -24,8 +24,8 @@ class SamplerRegistry(QObject):
     - Clean lifecycle management (register/unregister)
     """
 
-    sampler_registered = pyqtSignal(str)    # track_id
-    sampler_unregistered = pyqtSignal(str)  # track_id
+    sampler_registered = Signal(str)    # track_id
+    sampler_unregistered = Signal(str)  # track_id
 
     def __init__(self, parent=None):
         super().__init__(parent)

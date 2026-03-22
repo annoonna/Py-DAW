@@ -11,7 +11,7 @@ This is a GUI settings layer only; audio engine routing remains separate.
 from __future__ import annotations
 
 import re
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,

@@ -21,7 +21,7 @@ import math
 import threading
 from typing import Optional, Tuple, List
 
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+from PySide6.QtCore import QObject, Signal, QTimer
 
 from pydaw.core.threading import ThreadPoolService, Worker
 from pydaw.core.settings import SettingsKeys
@@ -77,8 +77,8 @@ class PrewarmStats:
 
 
 class PrewarmService(QObject):
-    status = pyqtSignal(str)
-    error = pyqtSignal(str)
+    status = Signal(str)
+    error = Signal(str)
 
     def __init__(self, threadpool: ThreadPoolService, project_service, transport_service):
         super().__init__()

@@ -1051,7 +1051,7 @@ class ScoreView(QGraphicsView):
             self.set_selection({existing_id})
             # GEFIXT: Verzögere redraw mit QTimer
             from pydaw.notation.qt_compat import Qt
-            from PyQt6.QtCore import QTimer
+            from PySide6.QtCore import QTimer
             QTimer.singleShot(0, self.redraw_events)
 
         menu = QMenu(self)

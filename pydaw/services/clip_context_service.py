@@ -10,7 +10,7 @@ Koordiniert:
 from __future__ import annotations
 from typing import TYPE_CHECKING
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from pydaw.services.editor_focus import EditorFocusContext
 
@@ -33,11 +33,11 @@ class ClipContextService(QObject):
     """
     
     # Signals
-    active_slot_changed = pyqtSignal(int, str, str)  # scene_idx, track_id, clip_id
-    loop_params_changed = pyqtSignal(str, float, float, float)  # clip_id, start, end, offset
-    slot_edit_requested = pyqtSignal(str)  # clip_id
+    active_slot_changed = Signal(int, str, str)  # scene_idx, track_id, clip_id
+    loop_params_changed = Signal(str, float, float, float)  # clip_id, start, end, offset
+    slot_edit_requested = Signal(str)  # clip_id
     # v0.0.20.612: Dual-Clock Phase A — neues Signal für reicheren Kontext
-    editor_focus_changed = pyqtSignal(object)  # EditorFocusContext
+    editor_focus_changed = Signal(object)  # EditorFocusContext
     
     def __init__(self, project_service: ProjectService):
         super().__init__()

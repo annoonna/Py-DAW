@@ -9,16 +9,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Any
 
-from PyQt6.QtCore import QObject, QRunnable, QThreadPool, pyqtSignal
+from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
 
 
 class WorkerSignals(QObject):
     """Signals for background work."""
 
-    finished = pyqtSignal()
-    error = pyqtSignal(str)
-    result = pyqtSignal(object)
-    progress = pyqtSignal(int)
+    finished = Signal()
+    error = Signal(str)
+    result = Signal(object)
+    progress = Signal(int)
 
 
 class Worker(QRunnable):

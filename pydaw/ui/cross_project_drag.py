@@ -21,7 +21,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional
 
-from PyQt6.QtCore import Qt, QMimeData
+from PySide6.QtCore import Qt, QMimeData
 
 # Custom MIME type for cross-project drag operations
 MIME_CROSS_PROJECT = "application/x-pydaw-cross-project"

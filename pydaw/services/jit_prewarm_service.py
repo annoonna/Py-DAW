@@ -51,13 +51,13 @@ from typing import Optional, List, Callable, Any
 from dataclasses import dataclass
 
 try:
-    from PyQt6.QtCore import QObject, QThread, pyqtSignal
+    from PySide6.QtCore import QObject, QThread, Signal
     PYQT_AVAILABLE = True
 except ImportError:
     PYQT_AVAILABLE = False
     QObject = object
     QThread = object
-    pyqtSignal = None
+    Signal = None
 
 try:
     import numpy as np
@@ -83,9 +83,9 @@ class JitPrewarmWorker(QThread if PYQT_AVAILABLE else object):
     """
     
     if PYQT_AVAILABLE:
-        progress_changed = pyqtSignal(int, str)
-        finished_success = pyqtSignal()
-        finished_error = pyqtSignal(str)
+        progress_changed = Signal(int, str)
+        finished_success = Signal()
+        finished_error = Signal(str)
     
     def __init__(self, tasks: List[PrewarmTask], parent=None):
         if PYQT_AVAILABLE:
@@ -157,8 +157,8 @@ class JitPrewarmService(QObject if PYQT_AVAILABLE else object):
     """
     
     if PYQT_AVAILABLE:
-        progress_changed = pyqtSignal(int, str)
-        finished = pyqtSignal()
+        progress_changed = Signal(int, str)
+        finished = Signal()
     
     def __init__(self, parent=None):
         if PYQT_AVAILABLE:

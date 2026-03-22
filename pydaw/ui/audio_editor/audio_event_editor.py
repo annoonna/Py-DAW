@@ -38,8 +38,8 @@ try:
 except Exception:  # pragma: no cover
     sf = None  # type: ignore
 
-from PyQt6.QtCore import Qt, pyqtSignal, QPointF, QRectF, QMimeData
-from PyQt6.QtGui import (
+from PySide6.QtCore import Qt, Signal, QPointF, QRectF, QMimeData
+from PySide6.QtGui import (
     QBrush,
     QColor,
     QPainter,
@@ -52,7 +52,7 @@ from PyQt6.QtGui import (
     QKeySequence,
     QShortcut,
 )
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
     QGraphicsLineItem,
@@ -252,7 +252,7 @@ class AudioEditorRuler(QWidget):
     - Ctrl+Wheel = zoom
     """
 
-    seek_requested = pyqtSignal(float)  # beat position
+    seek_requested = Signal(float)  # beat position
 
     def __init__(self, editor: 'AudioEventEditor', parent=None):
         super().__init__(parent or editor)
@@ -585,24 +585,24 @@ class AudioEditorRuler(QWidget):
 class AudioEditorView(QGraphicsView):
     """Main interactive view: zoom + tool routing + context menu."""
 
-    request_slice = pyqtSignal(float)  # at_beats
-    request_remove_slice = pyqtSignal(float)  # at_beats
-    request_set_loop = pyqtSignal(float, float)  # start_beats, end_beats
+    request_slice = Signal(float)  # at_beats
+    request_remove_slice = Signal(float)  # at_beats
+    request_set_loop = Signal(float, float)  # start_beats, end_beats
     # Knife Cut+Drag: split then drag right-part(s) immediately
-    request_slice_drag = pyqtSignal(float, float)  # at_beats, press_scene_x
-    knife_drag_update = pyqtSignal(float, int)  # scene_x, modifiers(int)
-    knife_drag_end = pyqtSignal()
-    context_action_selected = pyqtSignal(str)
+    request_slice_drag = Signal(float, float)  # at_beats, press_scene_x
+    knife_drag_update = Signal(float, int)  # scene_x, modifiers(int)
+    knife_drag_end = Signal()
+    context_action_selected = Signal(str)
     # Pencil tool: add/move/delete automation points
-    pencil_add_point = pyqtSignal(float, float)  # at_beats, normalized_value (0..1)
-    pencil_remove_point = pyqtSignal(float)  # at_beats
-    pencil_drag_point = pyqtSignal(float, float)  # at_beats, normalized_value
+    pencil_add_point = Signal(float, float)  # at_beats, normalized_value (0..1)
+    pencil_remove_point = Signal(float)  # at_beats
+    pencil_drag_point = Signal(float, float)  # at_beats, normalized_value
 
     # Stretch/Warp markers (double-click to add in Stretch overlay)
-    stretch_add_marker = pyqtSignal(float)  # at_beats
+    stretch_add_marker = Signal(float)  # at_beats
 
     # UI sync: ruler needs repaint when view scroll/zoom changes
-    view_changed = pyqtSignal()
+    view_changed = Signal()
 
     def __init__(self, scene: BeatGridScene, *, px_per_beat: float = 80.0, parent=None):
         super().__init__(scene, parent)
@@ -1579,7 +1579,7 @@ class StretchWarpMarkerItem(QGraphicsRectItem):
 class AudioEventEditor(QWidget):
     """Central widget shown in bottom editor area for audio clips."""
 
-    status_message = pyqtSignal(str)
+    status_message = Signal(str)
 
     def __init__(self, project_service, *, transport=None, editor_timeline=None, parent=None):
         super().__init__(parent)
@@ -2236,7 +2236,7 @@ class AudioEventEditor(QWidget):
         _mk('Stretch', 0.25, 4.0, 0.01, 2, '×')
 
         # v0.0.20.641: Stretch Mode ComboBox (AP3 Phase 3B)
-        from PyQt6.QtWidgets import QComboBox as _QCB
+        from PySide6.QtWidgets import QComboBox as _QCB
         sm_lbl = QLabel("Mode:")
         sm_lbl.setStyleSheet("font-size: 9px; color: #aaa;")
         ph.addWidget(sm_lbl)
@@ -3364,7 +3364,7 @@ class AudioEventEditor(QWidget):
             # Schedule final refresh when drag ends
             if not getattr(self, '_pencil_refresh_pending', False):
                 self._pencil_refresh_pending = True
-                from PyQt6.QtCore import QTimer
+                from PySide6.QtCore import QTimer
                 QTimer.singleShot(70, self._pencil_deferred_refresh)
 
     def _pencil_deferred_refresh(self) -> None:
@@ -4174,32 +4174,32 @@ class AudioEventEditor(QWidget):
 
         # --- Clipboard actions from context menu (simulated key events) ---
         if a == "_ctx_copy":
-            from PyQt6.QtCore import Qt
+            from PySide6.QtCore import Qt
             ev = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_C, Qt.KeyboardModifier.ControlModifier)
             self.handle_key_event(ev)
             return
         if a == "_ctx_cut":
-            from PyQt6.QtCore import Qt
+            from PySide6.QtCore import Qt
             ev = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_X, Qt.KeyboardModifier.ControlModifier)
             self.handle_key_event(ev)
             return
         if a == "_ctx_paste":
-            from PyQt6.QtCore import Qt
+            from PySide6.QtCore import Qt
             ev = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_V, Qt.KeyboardModifier.ControlModifier)
             self.handle_key_event(ev)
             return
         if a == "_ctx_delete":
-            from PyQt6.QtCore import Qt
+            from PySide6.QtCore import Qt
             ev = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_Delete, Qt.KeyboardModifier.NoModifier)
             self.handle_key_event(ev)
             return
         if a == "_ctx_select_all":
-            from PyQt6.QtCore import Qt
+            from PySide6.QtCore import Qt
             ev = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.ControlModifier)
             self.handle_key_event(ev)
             return
         if a == "_ctx_duplicate":
-            from PyQt6.QtCore import Qt
+            from PySide6.QtCore import Qt
             ev = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_D, Qt.KeyboardModifier.ControlModifier)
             self.handle_key_event(ev)
             return

@@ -22,9 +22,9 @@ from typing import TYPE_CHECKING, Optional
 
 import logging
 
-from PyQt6.QtCore import QRectF, Qt
-from PyQt6.QtGui import QBrush, QColor, QPainter, QPen
-from PyQt6.QtWidgets import QGraphicsItem, QGraphicsScene
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QBrush, QColor, QPainter, QPen
+from PySide6.QtWidgets import QGraphicsItem, QGraphicsScene
 
 if TYPE_CHECKING:
     from pydaw.ui.notation.notation_view import NotationView
@@ -114,8 +114,8 @@ class _GhostNoteItem(QGraphicsItem):
                 glyph = "♯" if acc > 0 else "♭"
                 if acc == 2:
                     glyph = "♮"
-                from PyQt6.QtGui import QFont
-                from PyQt6.QtCore import QPointF
+                from PySide6.QtGui import QFont
+                from PySide6.QtCore import QPointF
 
                 font = QFont()
                 try:

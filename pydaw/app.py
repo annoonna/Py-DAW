@@ -8,7 +8,7 @@ import traceback
 import faulthandler
 import signal
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from .utils.logging_setup import setup_logging
 
@@ -68,9 +68,9 @@ def run(argv: list[str] | None = None) -> int:
         pass
 
     class SafeApplication(QApplication):
-        """QApplication that prevents PyQt6 aborts on unhandled exceptions.
+        """QApplication that prevents Qt aborts on unhandled exceptions.
 
-        PyQt6/Qt may terminate the whole process with SIGABRT when an exception
+        PySide6/Qt may terminate the whole process with SIGABRT when an exception
         escapes a Qt event handler (e.g. during painting or slot execution).
         Catching here keeps the GUI alive and logs the traceback.
         """

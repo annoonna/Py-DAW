@@ -16,8 +16,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, Optional
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,

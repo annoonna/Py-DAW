@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 
 class CurveType(Enum):
@@ -469,11 +469,11 @@ class AutomationManager(QObject):
     """
 
     # Signal: a widget requests to show automation for parameter_id
-    request_show_automation = pyqtSignal(str)  # parameter_id
+    request_show_automation = Signal(str)  # parameter_id
     # Signal: a parameter's effective value changed
-    parameter_changed = pyqtSignal(str, float)  # parameter_id, new_value
+    parameter_changed = Signal(str, float)  # parameter_id, new_value
     # Signal: automation lane data changed
-    lane_data_changed = pyqtSignal(str)  # parameter_id
+    lane_data_changed = Signal(str)  # parameter_id
 
     def __init__(self, parent: QObject = None, rt_params: Any = None):
         super().__init__(parent)
@@ -886,7 +886,7 @@ class AutomationManager(QObject):
                 dirty = self._cc_ui_dirty_pids
                 # Create throttle timer on first use (max 8 Hz UI updates)
                 try:
-                    from PyQt6.QtCore import QTimer
+                    from PySide6.QtCore import QTimer
                     t = QTimer(self)
                     t.setInterval(125)  # 8 Hz
                     t.timeout.connect(self._flush_cc_ui)
@@ -937,7 +937,7 @@ class AutomationManager(QObject):
 
         # Deferred: thin one lane per timer tick (50ms apart)
         try:
-            from PyQt6.QtCore import QTimer
+            from PySide6.QtCore import QTimer
 
             def _thin_next():
                 if not pids:

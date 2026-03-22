@@ -26,9 +26,9 @@ import copy
 from datetime import datetime
 from typing import Optional, Set
 
-from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal
-from PyQt6.QtGui import QAction, QBrush, QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap
-from PyQt6.QtWidgets import QMenu, QWidget
+from PySide6.QtCore import Qt, QRectF, QPointF, Signal
+from PySide6.QtGui import QAction, QBrush, QColor, QFont, QLinearGradient, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtWidgets import QMenu, QWidget
 
 from pydaw.model.midi import MidiNote
 from pydaw.services.project_service import ProjectService
@@ -87,15 +87,15 @@ class _ExprMorphDrag:
 
 class PianoRollCanvas(QWidget):
     # Context actions (handled by PianoRollEditor/MainWindow)
-    loop_start_requested = pyqtSignal(float)
-    loop_end_requested = pyqtSignal(float)
-    playhead_requested = pyqtSignal(float)
-    status_message = pyqtSignal(str, int)
+    loop_start_requested = Signal(float)
+    loop_end_requested = Signal(float)
+    playhead_requested = Signal(float)
+    status_message = Signal(str, int)
 
     def __init__(self, project: ProjectService, transport=None, parent=None):
         super().__init__(parent)
         # v0.0.20.607: Canvas must NEVER influence parent dock/window size
-        from PyQt6.QtWidgets import QSizePolicy
+        from PySide6.QtWidgets import QSizePolicy
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
         self.project = project
         # Optional transport reference (for loop auto-extend convenience)

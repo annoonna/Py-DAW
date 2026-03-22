@@ -9,8 +9,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal as Signal
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal as Signal
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,

@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from PyQt6.QtCore import QSettings
+from PySide6.QtCore import QSettings
 
 from .settings import SettingsKeys
 

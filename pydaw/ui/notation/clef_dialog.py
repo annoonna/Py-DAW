@@ -14,9 +14,9 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from PyQt6.QtCore import Qt, QRectF, pyqtSlot
-from PyQt6.QtGui import QFont, QPainter, QPen, QColor
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QRectF, Slot
+from PySide6.QtGui import QFont, QPainter, QPen, QColor
+from PySide6.QtWidgets import (
     QComboBox,
     QDialog,
     QVBoxLayout,

@@ -6,7 +6,7 @@ Mehrere Geräte können gleichzeitig verbunden werden.
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
     QHBoxLayout,
@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
 )
-from PyQt6.QtCore import Qt
+from PySide6.QtCore import Qt
 
 from pydaw.services.midi_service import MidiService
 

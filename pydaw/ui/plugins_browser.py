@@ -22,9 +22,9 @@ import os
 from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
-from PyQt6.QtCore import Qt, QMimeData, QThread, pyqtSignal, QObject, QUrl
-from PyQt6.QtGui import QDrag, QDesktopServices, QGuiApplication
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QMimeData, QThread, Signal, QObject, QUrl
+from PySide6.QtGui import QDrag, QDesktopServices, QGuiApplication
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton,
     QTabWidget, QListWidget, QListWidgetItem, QMenu, QCheckBox, QMessageBox
 )
@@ -155,8 +155,8 @@ class _StarDragList(QListWidget):
 
 
 class _ScanWorker(QObject):
-    finished = pyqtSignal(dict)
-    status = pyqtSignal(str)
+    finished = Signal(dict)
+    status = Signal(str)
 
     def __init__(self, extra_paths: Dict[str, List[str]]):
         super().__init__()
@@ -182,7 +182,7 @@ class _ScanWorker(QObject):
 
 
 class PluginsBrowserWidget(QWidget):
-    prefs_changed = pyqtSignal()
+    prefs_changed = Signal()
 
     def __init__(self, on_add_audio_fx=None, get_add_scope: Optional[Callable[[str], tuple[str, str]]] = None, parent=None):  # noqa: ANN001
         super().__init__(parent)
@@ -224,7 +224,7 @@ class PluginsBrowserWidget(QWidget):
         self.only_favs.stateChanged.connect(lambda _v: self._safe(self._refilter_all))
 
         # v0.0.20.406: Instrument/Effect filter
-        from PyQt6.QtWidgets import QComboBox
+        from PySide6.QtWidgets import QComboBox
         self.type_filter = QComboBox()
         self.type_filter.addItems(["All", "🎹 Instruments", "🔊 Effects"])
         self.type_filter.setCurrentIndex(0)
@@ -355,7 +355,7 @@ class PluginsBrowserWidget(QWidget):
             self._update_scope_badge()
 
     def _gather_extra_paths(self) -> Dict[str, List[str]]:
-        from PyQt6.QtCore import QSettings
+        from PySide6.QtCore import QSettings
         from ..core.settings import SettingsKeys
 
         s = QSettings(SettingsKeys.organization, SettingsKeys.application)
@@ -644,7 +644,7 @@ class PluginsBrowserWidget(QWidget):
             # v0.0.20.725: Warn if plugin is blacklisted
             if payload.get("blacklisted"):
                 try:
-                    from PyQt6.QtWidgets import QMessageBox
+                    from PySide6.QtWidgets import QMessageBox
                     reply = QMessageBox.warning(
                         self,
                         "Plugin geblacklistet",
@@ -802,7 +802,7 @@ class PluginsBrowserWidget(QWidget):
             # Offline debug helper (LV2 only): render an audio file through this plugin.
             if str(payload.get("kind") or "") == "lv2":
                 try:
-                    from PyQt6.QtWidgets import QFileDialog
+                    from PySide6.QtWidgets import QFileDialog
                     a_off = m.addAction("Offline: Render WAV through LV2…")
                     def _do_offline(_=False, _pid=pid, _name=name):
                         try:
@@ -975,7 +975,7 @@ class PluginsBrowserWidget(QWidget):
                     # v0.0.20.725: Dim blacklisted plugins
                     if _is_bl:
                         try:
-                            from PyQt6.QtGui import QColor
+                            from PySide6.QtGui import QColor
                             it.setForeground(QColor(120, 120, 120))
                         except Exception:
                             pass

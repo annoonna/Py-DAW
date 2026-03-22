@@ -52,7 +52,7 @@ except ImportError:
     _MSGPACK_AVAILABLE = False
 
 try:
-    from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+    from PySide6.QtCore import QObject, Signal, QTimer
     _QT_AVAILABLE = True
 except ImportError:
     _QT_AVAILABLE = False
@@ -191,21 +191,21 @@ class RustEngineBridge(_BASE_CLASS):
     # --- Qt Signals (only if Qt available) ---
     if _QT_AVAILABLE:
         # Transport
-        playhead_changed = pyqtSignal(float, int, bool)  # beat, sample_pos, is_playing
-        transport_state_changed = pyqtSignal(bool, float)  # is_playing, beat
+        playhead_changed = Signal(float, int, bool)  # beat, sample_pos, is_playing
+        transport_state_changed = Signal(bool, float)  # is_playing, beat
 
         # Metering
-        master_meter_changed = pyqtSignal(float, float, float, float)  # peak_l, peak_r, rms_l, rms_r
-        track_meters_changed = pyqtSignal(list)  # list of (track_index, peak_l, peak_r, rms_l, rms_r)
+        master_meter_changed = Signal(float, float, float, float)  # peak_l, peak_r, rms_l, rms_r
+        track_meters_changed = Signal(list)  # list of (track_index, peak_l, peak_r, rms_l, rms_r)
 
         # Engine status
-        engine_ready = pyqtSignal(int, int, str)  # sample_rate, buffer_size, device_name
-        engine_error = pyqtSignal(int, str)  # code, message
-        engine_pong = pyqtSignal(int, float, int)  # seq, cpu_load, xrun_count
-        plugin_crashed = pyqtSignal(str, int, str)  # track_id, slot_index, message
-        plugin_scan_result = pyqtSignal(list, int, list)  # plugins, scan_time_ms, errors
-        plugin_loaded = pyqtSignal(str, int, str, str, int, int)  # track_id, slot, name, format, params, latency
-        engine_shutdown = pyqtSignal()
+        engine_ready = Signal(int, int, str)  # sample_rate, buffer_size, device_name
+        engine_error = Signal(int, str)  # code, message
+        engine_pong = Signal(int, float, int)  # seq, cpu_load, xrun_count
+        plugin_crashed = Signal(str, int, str)  # track_id, slot_index, message
+        plugin_scan_result = Signal(list, int, list)  # plugins, scan_time_ms, errors
+        plugin_loaded = Signal(str, int, str, str, int, int)  # track_id, slot, name, format, params, latency
+        engine_shutdown = Signal()
 
     # Singleton
     _instance: Optional[RustEngineBridge] = None

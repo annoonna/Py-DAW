@@ -30,13 +30,13 @@ from __future__ import annotations
 import math
 from typing import Any, Optional
 
-from PyQt6.QtCore import Qt, QRectF, QPointF, pyqtSignal, QTimer
-from PyQt6.QtGui import (
+from PySide6.QtCore import Qt, QRectF, QPointF, Signal, QTimer
+from PySide6.QtGui import (
     QPainter, QPen, QBrush, QColor, QConicalGradient,
     QRadialGradient, QFontMetrics, QMouseEvent, QWheelEvent,
     QPaintEvent, QAction,
 )
-from PyQt6.QtWidgets import QWidget, QMenu, QVBoxLayout, QLabel, QSizePolicy
+from PySide6.QtWidgets import QWidget, QMenu, QVBoxLayout, QLabel, QSizePolicy
 
 
 class AutomatedWidgetMixin:
@@ -147,7 +147,7 @@ class AutomatedKnob(QWidget, AutomatedWidgetMixin):
     - Right-click for automation context menu
     """
 
-    value_changed = pyqtSignal(float)  # normalized 0..1
+    value_changed = Signal(float)  # normalized 0..1
 
     # Arc geometry constants
     ARC_START = 225  # degrees (bottom-left)
@@ -343,7 +343,7 @@ class AutomatedSlider(QWidget, AutomatedWidgetMixin):
     - Shift+Drag for fine adjustment
     """
 
-    value_changed = pyqtSignal(float)
+    value_changed = Signal(float)
 
     COLOR_BG = QColor(50, 50, 55)
     COLOR_TRACK = QColor(70, 70, 75)

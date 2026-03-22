@@ -55,9 +55,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Tuple, Set, Optional
 
-from PyQt6.QtCore import Qt, QPointF, QRectF, QTimer
-from PyQt6.QtGui import QColor, QPainter, QPen, QPainterPath
-from PyQt6.QtWidgets import QWidget, QMenu, QToolTip, QSizePolicy, QDialog, QVBoxLayout
+from PySide6.QtCore import Qt, QPointF, QRectF, QTimer
+from PySide6.QtGui import QColor, QPainter, QPen, QPainterPath
+from PySide6.QtWidgets import QWidget, QMenu, QToolTip, QSizePolicy, QDialog, QVBoxLayout
 
 
 @dataclass

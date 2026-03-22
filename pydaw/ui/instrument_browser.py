@@ -14,9 +14,9 @@ from __future__ import annotations
 import json
 from typing import Callable, Optional
 
-from PyQt6.QtCore import Qt, QMimeData, pyqtSignal
-from PyQt6.QtGui import QDrag
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QMimeData, Signal
+from PySide6.QtGui import QDrag
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -97,7 +97,7 @@ class _StarDragInstrumentList(QListWidget):
 
 
 class InstrumentBrowserWidget(QWidget):
-    prefs_changed = pyqtSignal()
+    prefs_changed = Signal()
 
     def __init__(self, on_add_instrument: Optional[Callable[[str], None]] = None, get_add_scope: Optional[Callable[[str], tuple[str, str]]] = None, parent=None):
         super().__init__(parent)

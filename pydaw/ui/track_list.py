@@ -6,7 +6,7 @@ This is still placeholder UI; real track controls come later.
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
@@ -17,15 +17,15 @@ from PyQt6.QtWidgets import (
     QMenu,
     QAbstractItemView,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QColor
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor
 
 from pydaw.services.project_service import ProjectService
 from pydaw.ui.bounce_freeze_dialog import ask_bounce_freeze_options
 
 
 class TrackListWidget(QWidget):
-    selected_track_changed = pyqtSignal(str)  # track_id (empty if none)
+    selected_track_changed = Signal(str)  # track_id (empty if none)
 
     def __init__(self, project: ProjectService, parent=None):
         super().__init__(parent)
@@ -78,7 +78,7 @@ class TrackListWidget(QWidget):
         trk = next((t for t in self.project.ctx.project.tracks if t.id == str(track_id)), None)
         if not trk or getattr(trk, "kind", "") == "master":
             return
-        from PyQt6.QtWidgets import QInputDialog
+        from PySide6.QtWidgets import QInputDialog
         new_name, ok = QInputDialog.getText(
             self,
             "Track umbenennen",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QWidget,
     QSplitter,
     QScrollArea,
@@ -11,7 +11,7 @@ from PyQt6.QtWidgets import (
     QToolButton,
     QLabel,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QEvent
+from PySide6.QtCore import Qt, Signal, QEvent
 
 from pydaw.services.project_service import ProjectService
 from .track_list import TrackListWidget
@@ -20,21 +20,21 @@ from .clip_launcher_overlay import ClipLauncherOverlay
 
 
 class ArrangerView(QWidget):
-    clip_activated = pyqtSignal(str)
-    clip_selected = pyqtSignal(str)
+    clip_activated = Signal(str)
+    clip_selected = Signal(str)
 
-    request_rename_clip = pyqtSignal(str)
-    request_duplicate_clip = pyqtSignal(str)
-    request_delete_clip = pyqtSignal(str)
+    request_rename_clip = Signal(str)
+    request_duplicate_clip = Signal(str)
+    request_delete_clip = Signal(str)
     
     # Status messages from keyboard shortcuts (v0.0.19.7.0)
-    status_message = pyqtSignal(str, int)  # (message, timeout_ms)
+    status_message = Signal(str, int)  # (message, timeout_ms)
 
     # Visible horizontal range in beats (used by other editors)
-    view_range_changed = pyqtSignal(float, float)
+    view_range_changed = Signal(float, float)
 
     # Drag&Drop overlay import (file_path, track_id, start_beats, slot_key)
-    request_import_audio_file = pyqtSignal(str, str, float, str)
+    request_import_audio_file = Signal(str, str, float, str)
 
     def __init__(self, project: ProjectService, parent=None):
         super().__init__(parent)

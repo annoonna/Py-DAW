@@ -12,9 +12,9 @@ from __future__ import annotations
 
 from typing import Optional, Set
 
-from PyQt6.QtCore import Qt, QRect, pyqtSignal
-from PyQt6.QtGui import QPainter, QColor, QPen, QMouseEvent
-from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSpinBox, QToolButton
+from PySide6.QtCore import Qt, QRect, Signal
+from PySide6.QtGui import QPainter, QColor, QPen, QMouseEvent
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QSpinBox, QToolButton
 
 
 # Piano key layout constants
@@ -27,7 +27,7 @@ class TouchKeyboardWidget(QWidget):
     """On-screen piano keyboard — click/touch to play notes."""
 
     # Emitted for external consumers (status bar etc.)
-    note_played = pyqtSignal(int, int)  # pitch, velocity
+    note_played = Signal(int, int)  # pitch, velocity
 
     def __init__(self, midi_manager=None, parent: Optional[QWidget] = None):
         super().__init__(parent)
@@ -81,7 +81,7 @@ class TouchKeyboardWidget(QWidget):
         toolbar.addStretch()
 
         # Layout: toolbar on top, keys below (painted)
-        from PyQt6.QtWidgets import QVBoxLayout
+        from PySide6.QtWidgets import QVBoxLayout
         main_lay = QVBoxLayout(self)
         main_lay.setContentsMargins(0, 0, 0, 0)
         main_lay.setSpacing(0)

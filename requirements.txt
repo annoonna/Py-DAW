@@ -14,7 +14,7 @@ python-rtmidi>=1.5.8
 pydub>=0.25.1
 
 # --- Core ---
-PyQt6>=6.6
+PyQt6>=6.6  # Linux/Windows; macOS nutzt PySide6 (automatisch via setup_all.py)
 numpy>=1.26
 scipy>=1.12
 

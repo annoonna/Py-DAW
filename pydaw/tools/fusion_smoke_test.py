@@ -27,12 +27,12 @@ if str(ROOT) not in sys.path:
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from PyQt6.QtWidgets import QApplication  # noqa: E402
+    from PySide6.QtWidgets import QApplication  # noqa: E402
 except Exception as exc:  # pragma: no cover - environment dependent
     QApplication = None
-    _PYQT_IMPORT_ERROR = exc
+    _QT_IMPORT_ERROR = exc
 else:
-    _PYQT_IMPORT_ERROR = None
+    _QT_IMPORT_ERROR = None
 
 from pydaw.model.project import Project, Track  # noqa: E402
 
@@ -189,7 +189,7 @@ def test_module_switch_walk(widget: FusionWidget) -> None:
 
 def main() -> int:
     if QApplication is None:
-        print(f"[SKIP] PyQt6 fehlt in dieser Umgebung: {_PYQT_IMPORT_ERROR}", file=sys.stderr)
+        print(f"[SKIP] PySide6 fehlt in dieser Umgebung: {_QT_IMPORT_ERROR}", file=sys.stderr)
         return 2
 
     app = QApplication.instance() or QApplication([])

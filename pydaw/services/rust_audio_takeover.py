@@ -45,7 +45,7 @@ from typing import Any, Callable, Dict, Optional
 _log = logging.getLogger(__name__)
 
 try:
-    from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+    from PySide6.QtCore import QObject, Signal, QTimer
     _QT = True
 except ImportError:
     _QT = False

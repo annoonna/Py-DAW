@@ -5,8 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Optional
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, QHBoxLayout
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QListWidget, QListWidgetItem, QLabel, QPushButton, QHBoxLayout
 
 from .browser_places_prefs import BrowserPlacesPrefs
 

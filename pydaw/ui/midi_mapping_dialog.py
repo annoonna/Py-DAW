@@ -13,12 +13,12 @@ Features:
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel, QListWidget,
     QListWidgetItem, QPushButton, QComboBox, QMessageBox,
     QTreeWidget, QTreeWidgetItem, QLineEdit, QSplitter, QGroupBox,
 )
-from PyQt6.QtCore import Qt
+from PySide6.QtCore import Qt
 
 from pydaw.services.project_service import ProjectService
 from pydaw.services.midi_mapping_service import (

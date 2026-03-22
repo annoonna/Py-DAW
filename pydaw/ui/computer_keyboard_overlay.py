@@ -16,9 +16,9 @@ from __future__ import annotations
 
 from typing import Optional, Set, Dict
 
-from PyQt6.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QEasingCurve, pyqtSignal
-from PyQt6.QtGui import QPainter, QColor, QFont, QPen, QBrush, QPaintEvent, QKeyEvent
-from PyQt6.QtWidgets import QWidget, QLabel, QHBoxLayout, QGraphicsOpacityEffect
+from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QRect, QEasingCurve, Signal
+from PySide6.QtGui import QPainter, QColor, QFont, QPen, QBrush, QPaintEvent, QKeyEvent
+from PySide6.QtWidgets import QWidget, QLabel, QHBoxLayout, QGraphicsOpacityEffect
 
 
 # Layout: two rows of keys

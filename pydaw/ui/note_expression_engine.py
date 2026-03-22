@@ -35,8 +35,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Tuple, Optional, List
 
-from PyQt6.QtCore import QObject, pyqtSignal, QRectF, QPointF
-from PyQt6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtCore import QObject, Signal, QRectF, QPointF
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 
 from pydaw.model.midi import MidiNote
 
@@ -61,7 +61,7 @@ DEFAULT_PARAMS: tuple[ExpressionParamSpec, ...] = (
 class NoteExpressionEngine(QObject):
     """Render hook + state holder for per-note expressions."""
 
-    changed = pyqtSignal()
+    changed = Signal()
 
     # Visual mapping choices (UI-only):
     # For Micropitch we display +/- 2 semitones by default (Bitwig-like). The

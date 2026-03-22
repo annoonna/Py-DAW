@@ -12,8 +12,8 @@ Die ChronoScaleStudio-Integration bleibt optional in `pydaw/ui/chronoscale_widge
 
 from __future__ import annotations
 
-from PyQt6.QtCore import pyqtSignal as Signal
-from PyQt6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtCore import Signal as Signal
+from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
 
 from .pianoroll_editor import PianoRollEditor
 from .notation.notation_view import NotationWidget

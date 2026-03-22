@@ -20,8 +20,8 @@ import uuid
 from pathlib import Path
 from typing import Any, Optional
 
-from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel,
     QComboBox, QPushButton, QFrame, QSlider, QSpinBox, QMenu,
     QFileDialog, QInputDialog, QSizePolicy,
@@ -716,7 +716,7 @@ class FusionWidget(QWidget):
     def _load_wavetable_file(self) -> None:
         """Open file dialog to load a .wt or .wav wavetable."""
         try:
-            from PyQt6.QtWidgets import QFileDialog
+            from PySide6.QtWidgets import QFileDialog
             path, _ = QFileDialog.getOpenFileName(
                 self, "Wavetable laden",
                 os.path.expanduser("~"),

@@ -14,9 +14,9 @@ The selection is persisted via :mod:`pydaw.core.settings_store`.
 
 from __future__ import annotations
 
-from PyQt6.QtCore import pyqtSignal, QSize, QRectF, QPointF, Qt
-from PyQt6.QtGui import QAction, QActionGroup, QColor, QPainter, QPen, QPolygonF, QFontMetrics
-from PyQt6.QtWidgets import QMenu, QToolButton, QStyle, QStyleOptionToolButton
+from PySide6.QtCore import Signal, QSize, QRectF, QPointF, Qt
+from PySide6.QtGui import QAction, QActionGroup, QColor, QPainter, QPen, QPolygonF, QFontMetrics
+from PySide6.QtWidgets import QMenu, QToolButton, QStyle, QStyleOptionToolButton
 from pydaw.core.settings import SettingsKeys
 from pydaw.core.settings_store import get_value, set_value
 from pydaw.music.scales import (
@@ -29,7 +29,7 @@ from pydaw.music.scales import (
 class ScaleMenuButton(QToolButton):
     """A small toolbar button showing current scale, with dropdown menu."""
 
-    changed = pyqtSignal()
+    changed = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent)

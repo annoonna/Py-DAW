@@ -24,9 +24,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QKeySequence, QShortcut
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtWidgets import (
     QWidget,
     QHBoxLayout,
     QToolButton,
@@ -79,7 +79,7 @@ class NotationInputState:
 class NotationPalette(QWidget):
     """A compact notation input palette (toolbar-like)."""
 
-    state_changed = pyqtSignal(object)  # NotationInputState
+    state_changed = Signal(object)  # NotationInputState
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)

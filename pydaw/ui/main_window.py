@@ -18,9 +18,9 @@ import subprocess
 import sys
 import traceback
 
-from PyQt6.QtGui import QGuiApplication, QAction, QKeySequence, QShortcut
+from PySide6.QtGui import QGuiApplication, QAction, QKeySequence, QShortcut
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QWidget,
@@ -37,7 +37,7 @@ from PyQt6.QtWidgets import (
     QTabWidget,
     QMenu,
 )
-from PyQt6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer
 
 from pydaw.services.container import ServiceContainer
 from pydaw.core.settings import SettingsKeys
@@ -454,7 +454,7 @@ class MainWindow(QMainWindow):
         try:
             from pydaw.services.computer_keyboard_midi import ComputerKeyboardMidi
             ckm = ComputerKeyboardMidi(midi_manager=self.services.midi, parent=self)
-            from PyQt6.QtWidgets import QApplication
+            from PySide6.QtWidgets import QApplication
             app = QApplication.instance()
             if app is not None:
                 app.installEventFilter(ckm)
@@ -1213,7 +1213,7 @@ class MainWindow(QMainWindow):
         # We must neutralize minimum-size constraints coming from the tab bar and
         # internal widgets; otherwise the dock separator stops too early.
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             right_tabs.setMinimumWidth(0)
             right_tabs.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
             tb = right_tabs.tabBar()
@@ -1235,7 +1235,7 @@ class MainWindow(QMainWindow):
         # Allow shrinking the Browser panel almost closed (user requested).
         # Any minimum constraints here will stop the dock separator early.
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             right_tabs.setMinimumSize(0, 0)
             self.library.setMinimumSize(0, 0)
             self.track_params.setMinimumSize(0, 0)
@@ -1340,7 +1340,7 @@ class MainWindow(QMainWindow):
         # Important: the Browser dock is tabified with this launcher dock.
         # Any minimum width here will limit how far the right dock area can be collapsed.
         try:
-            from PyQt6.QtWidgets import QSizePolicy
+            from PySide6.QtWidgets import QSizePolicy
             self.launcher_panel.setMinimumSize(0, 0)
             self.launcher_dock.setMinimumSize(0, 0)
             self.launcher_dock.setMinimumWidth(0)
@@ -3832,8 +3832,8 @@ class MainWindow(QMainWindow):
     def _is_ctrl_held() -> bool:
         """Check if Ctrl/Cmd modifier is currently held (for copy-on-drag, Bitwig-style)."""
         try:
-            from PyQt6.QtWidgets import QApplication
-            from PyQt6.QtCore import Qt
+            from PySide6.QtWidgets import QApplication
+            from PySide6.QtCore import Qt
             mods = QApplication.keyboardModifiers()
             return bool(mods & Qt.KeyboardModifier.ControlModifier)
         except Exception:
@@ -5674,7 +5674,7 @@ class MainWindow(QMainWindow):
 
         if show_dialog and self._prerender_dialog is None:
             try:
-                from PyQt6.QtWidgets import QProgressDialog
+                from PySide6.QtWidgets import QProgressDialog
                 scope = "alle MIDI-Clips"
                 if clip_ids:
                     scope = f"{len(clip_ids)} Clip(s)"
@@ -6115,8 +6115,8 @@ class MainWindow(QMainWindow):
 
     def _export_dawproject(self) -> None:
         """Export the current project as .dawproject via the safe snapshot exporter."""
-        from PyQt6.QtWidgets import QFileDialog, QProgressDialog, QMessageBox
-        from PyQt6.QtCore import Qt
+        from PySide6.QtWidgets import QFileDialog, QProgressDialog, QMessageBox
+        from PySide6.QtCore import Qt
 
         if bool(getattr(self, "_dawproject_export_running", False)):
             self._set_status("DAWproject Export läuft bereits …", 2500)
@@ -6259,8 +6259,8 @@ class MainWindow(QMainWindow):
 
     def _import_dawproject(self) -> None:
         """Import a .dawproject file (Bitwig/Studio One/Cubase exchange format)."""
-        from PyQt6.QtWidgets import QFileDialog, QProgressDialog, QMessageBox, QCheckBox
-        from PyQt6.QtCore import Qt
+        from PySide6.QtWidgets import QFileDialog, QProgressDialog, QMessageBox, QCheckBox
+        from PySide6.QtCore import Qt
 
         path, _ = QFileDialog.getOpenFileName(
             self,
@@ -6299,7 +6299,7 @@ class MainWindow(QMainWindow):
             progress.setValue(pct)
             progress.setLabelText(msg)
             # Process events to keep UI responsive
-            from PyQt6.QtWidgets import QApplication
+            from PySide6.QtWidgets import QApplication
             QApplication.processEvents()
 
         try:
@@ -6428,7 +6428,7 @@ class MainWindow(QMainWindow):
             tid = trk.id
         
         # File picker for SF2
-        from PyQt6.QtWidgets import QFileDialog
+        from PySide6.QtWidgets import QFileDialog
         path, _ = QFileDialog.getOpenFileName(
             self, 
             "SoundFont (SF2) auswählen", 
@@ -7078,7 +7078,7 @@ class MainWindow(QMainWindow):
             pass
 
         if not hasattr(self, '_sandbox_timer') or self._sandbox_timer is None:
-            from PyQt6.QtCore import QTimer
+            from PySide6.QtCore import QTimer
             self._sandbox_timer = QTimer(self)
             self._sandbox_timer.setInterval(500)  # 2 Hz
             self._sandbox_timer.timeout.connect(self._poll_sandbox_status)
@@ -7740,7 +7740,7 @@ class MainWindow(QMainWindow):
 
     def _init_recovery(self) -> None:
         """Install autosave timer + show restore prompt if last session was unclean."""
-        from PyQt6.QtCore import QTimer
+        from PySide6.QtCore import QTimer
 
         # periodic autosave (safe JSON only)
         self._recovery_timer = QTimer(self)
@@ -7772,7 +7772,7 @@ class MainWindow(QMainWindow):
     def _prompt_recovery_if_needed(self) -> None:
         try:
             from pydaw.fileio import recovery
-            from PyQt6.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             from datetime import datetime
             from pathlib import Path
 

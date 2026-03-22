@@ -27,7 +27,7 @@ import wave
 import re
 from typing import Any, Callable, List, Optional
 
-from PyQt6.QtCore import QObject, pyqtSignal, QTimer
+from PySide6.QtCore import QObject, Signal, QTimer
 
 from pydaw.core.settings import SettingsKeys
 from pydaw.core.settings_store import set_value as set_setting
@@ -119,31 +119,31 @@ def _fusion_knob_to_engine_value(key: str, raw: float) -> float:
 
 
 class ProjectService(QObject):
-    status = pyqtSignal(str)
-    error = pyqtSignal(str)
-    project_updated = pyqtSignal()
-    project_changed = pyqtSignal()
-    clip_selected = pyqtSignal(str)
-    active_clip_changed = pyqtSignal(str)  # backward compatible alias for pianoroll
-    undo_changed = pyqtSignal()
+    status = Signal(str)
+    error = Signal(str)
+    project_updated = Signal()
+    project_changed = Signal()
+    clip_selected = Signal(str)
+    active_clip_changed = Signal(str)  # backward compatible alias for pianoroll
+    undo_changed = Signal()
     # Fired after a MIDI edit is committed (Undo step created). This allows
     # other services (e.g. audio) to react without the user needing to stop/play.
-    midi_notes_committed = pyqtSignal(str)
+    midi_notes_committed = Signal(str)
 
-    note_preview = pyqtSignal(int, int, int)  # pitch, velocity, duration_ms
+    note_preview = Signal(int, int, int)  # pitch, velocity, duration_ms
 
     # Lifecycle hook for UI: emitted after new/open/snapshot-load.
-    project_opened = pyqtSignal()
+    project_opened = Signal()
 
     # ClipLauncher: UI play-state indicator (slot_key list)
-    cliplauncher_active_slots_changed = pyqtSignal(list)
+    cliplauncher_active_slots_changed = Signal(list)
 
     # MIDI pre-render (performance): render MIDI->WAV in the background so
     # playback feels instant even with large SF2 instruments.
-    prerender_started = pyqtSignal(int)    # total clips
-    prerender_progress = pyqtSignal(int)   # percent 0..100
-    prerender_label = pyqtSignal(str)      # short status text
-    prerender_finished = pyqtSignal(bool)  # True if completed (not cancelled)
+    prerender_started = Signal(int)    # total clips
+    prerender_progress = Signal(int)   # percent 0..100
+    prerender_label = Signal(str)      # short status text
+    prerender_finished = Signal(bool)  # True if completed (not cancelled)
 
     def __init__(self, threadpool: ThreadPoolService, parent: QObject | None = None):
         super().__init__(parent)
@@ -4454,7 +4454,7 @@ class ProjectService(QObject):
         _qapp2 = None
         _blk_count = 0
         try:
-            from PyQt6.QtWidgets import QApplication
+            from PySide6.QtWidgets import QApplication
             _qapp2 = QApplication.instance()
         except Exception:
             pass
@@ -4839,7 +4839,7 @@ class ProjectService(QObject):
         # Without this, Qt shows "main.py antwortet nicht" for clips > ~2 seconds.
         _qapp = None
         try:
-            from PyQt6.QtWidgets import QApplication
+            from PySide6.QtWidgets import QApplication
             _qapp = QApplication.instance()
         except Exception:
             pass
@@ -5356,7 +5356,7 @@ class ProjectService(QObject):
             pass
         # v0.0.20.586: Keep GUI alive before heavy WAV write
         try:
-            from PyQt6.QtWidgets import QApplication
+            from PySide6.QtWidgets import QApplication
             _qa = QApplication.instance()
             if _qa is not None:
                 _qa.processEvents()
@@ -5377,7 +5377,7 @@ class ProjectService(QObject):
         if _bounce_dlg is not None:
             try:
                 _bounce_dlg.finish("✓ Bounce fertig!")
-                from PyQt6.QtCore import QTimer
+                from PySide6.QtCore import QTimer
                 QTimer.singleShot(600, _bounce_dlg.close)
             except Exception:
                 try:

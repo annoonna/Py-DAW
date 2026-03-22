@@ -243,7 +243,7 @@ def build_nuitka(plat: str, debug: bool = False) -> Optional[Path]:
     cmd = [
         sys.executable, "-m", "nuitka",
         "--standalone",
-        "--enable-plugin=pyqt6",
+        "--enable-plugin=pyside6",
         f"--output-dir={BUILD_DIR}",
         "--assume-yes-for-download",
         "--remove-output",

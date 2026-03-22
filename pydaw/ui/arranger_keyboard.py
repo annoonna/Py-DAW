@@ -12,8 +12,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Callable
 import copy
 
-from PyQt6.QtCore import Qt, QObject, pyqtSignal
-from PyQt6.QtGui import QKeyEvent
+from PySide6.QtCore import Qt, QObject, Signal
+from PySide6.QtGui import QKeyEvent
 
 if TYPE_CHECKING:
     from pydaw.services.project_service import ProjectService
@@ -23,8 +23,8 @@ class ArrangerKeyboardHandler(QObject):
     """Handles all keyboard shortcuts for Arranger canvas."""
     
     # Signals
-    status_message = pyqtSignal(str, int)  # (message, timeout_ms)
-    request_update = pyqtSignal()  # Request canvas repaint
+    status_message = Signal(str, int)  # (message, timeout_ms)
+    request_update = Signal()  # Request canvas repaint
     
     def __init__(
         self,

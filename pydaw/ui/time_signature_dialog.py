@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QMessageBox
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QPushButton, QMessageBox
 
 _TS_RE = re.compile(r"^\s*(\d+)\s*/\s*(\d+)\s*$")
 
