@@ -1,6 +1,6 @@
 # .github/workflows/build-release.yml
-# Builds Py_DAW for Linux, macOS, and Windows automatically.
-# Trigger: Push a tag like v0.0.20.728 or manually via workflow_dispatch.
+# Baut Py_DAW für Linux, macOS und Windows automatisch.
+# Trigger: Tag wie v0.0.20.731 pushen oder manuell starten.
 
 name: Build Release
 
@@ -8,10 +8,6 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version override (e.g., 0.0.20.728)'
-        required: false
 
 jobs:
   build:
@@ -22,19 +18,18 @@ jobs:
           - os: ubuntu-22.04
             platform: linux
             rust_target: x86_64-unknown-linux-gnu
-            artifact: ChronoScaleStudio-linux-x86_64.tar.gz
-          - os: macos-13
-            platform: macos
-            rust_target: x86_64-apple-darwin
-            artifact: ChronoScaleStudio-macos-x86_64.tar.gz
-          - os: macos-14
+            engine_bin: pydaw_engine
+            artifact: ChronoScaleStudio-linux-x86_64
+          - os: macos-15
             platform: macos
             rust_target: aarch64-apple-darwin
-            artifact: ChronoScaleStudio-macos-arm64.tar.gz
+            engine_bin: pydaw_engine
+            artifact: ChronoScaleStudio-macos-arm64
           - os: windows-latest
             platform: windows
             rust_target: x86_64-pc-windows-msvc
-            artifact: ChronoScaleStudio-windows-x86_64.zip
+            engine_bin: pydaw_engine.exe
+            artifact: ChronoScaleStudio-windows-x86_64
 
     runs-on: ${{ matrix.os }}
     name: Build (${{ matrix.os }})
@@ -42,7 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Python 3.12
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -57,74 +52,97 @@ jobs:
         with:
           workspaces: pydaw_engine
 
-      # Linux: Install ALSA headers + audio deps
-      - name: Linux deps
+      - name: Linux Deps
         if: matrix.platform == 'linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libasound2-dev pkg-config libgl1-mesa-dev
+          sudo apt-get install -y libasound2-dev pkg-config libgl1-mesa-dev patchelf
 
-      # Install Python deps + Nuitka
-      - name: Python deps
+      - name: Python Deps
         run: |
-          pip install --upgrade pip
+          pip install --upgrade pip setuptools wheel
+          pip install PyQt6 numpy scipy sounddevice soundfile mido pydub msgpack
+          pip install pedalboard numba llvmlite
           pip install nuitka ordered-set
-          pip install PyQt6 numpy scipy sounddevice soundfile mido pydub msgpack pedalboard numba
 
-      # Build Rust engine
-      - name: Build Rust engine
+      - name: Rust Engine bauen
         working-directory: pydaw_engine
         run: cargo build --release --target ${{ matrix.rust_target }}
 
-      # Build with Nuitka
-      - name: Build with Nuitka
-        run: python build_release.py --skip-rust --skip-package
+      - name: Rust Tests
+        if: matrix.platform == 'linux'
+        working-directory: pydaw_engine
+        run: cargo test
 
-      # Embed Rust binary
-      - name: Embed Rust binary
+      - name: Paket erstellen
         shell: bash
         run: |
           VERSION=$(cat VERSION)
-          DIST="dist/ChronoScaleStudio-${VERSION}-${{ matrix.platform }}"
-          if [ "${{ matrix.platform }}" = "windows" ]; then
-            cp pydaw_engine/target/${{ matrix.rust_target }}/release/pydaw_engine.exe "${DIST}/"
+          DIST="dist/${{ matrix.artifact }}"
+          mkdir -p "$DIST"
+
+          echo "=== Versuche Nuitka Build ==="
+          if python -m nuitka \
+            --standalone \
+            --enable-plugin=pyqt6 \
+            --output-dir=build_nuitka \
+            --assume-yes-for-download \
+            --no-pyi-file \
+            --include-package=pydaw \
+            --product-name=ChronoScaleStudio \
+            --product-version="$VERSION" \
+            main.py 2>&1; then
+
+            echo "Nuitka erfolgreich"
+            NUITKA_OUT=$(find build_nuitka -maxdepth 1 -name "*.dist" -type d | head -1)
+            if [ -d "$NUITKA_OUT" ]; then
+              cp -r "$NUITKA_OUT"/* "$DIST/"
+            fi
           else
-            cp pydaw_engine/target/${{ matrix.rust_target }}/release/pydaw_engine "${DIST}/"
-            chmod +x "${DIST}/pydaw_engine"
+            echo "Nuitka fehlgeschlagen — erstelle Source-Paket"
+            cp -r pydaw "$DIST/pydaw"
+            cp main.py "$DIST/"
+            cp setup_all.py "$DIST/"
+            cp requirements.txt "$DIST/"
+            if [ "${{ matrix.platform }}" != "windows" ]; then
+              printf '#!/bin/bash\ncd "$(dirname "$0")"\npython3 main.py "$@"\n' > "$DIST/start.sh"
+              chmod +x "$DIST/start.sh"
+            else
+              printf '@echo off\npython main.py %%*\n' > "$DIST/start.bat"
+            fi
           fi
-          cp VERSION "${DIST}/"
 
-      # Package
-      - name: Package (Linux)
-        if: matrix.platform == 'linux'
+          ENGINE="pydaw_engine/target/${{ matrix.rust_target }}/release/${{ matrix.engine_bin }}"
+          if [ -f "$ENGINE" ]; then
+            cp "$ENGINE" "$DIST/${{ matrix.engine_bin }}"
+            [ "${{ matrix.platform }}" != "windows" ] && chmod +x "$DIST/${{ matrix.engine_bin }}"
+            echo "Rust Engine eingebettet"
+          fi
+
+          cp VERSION "$DIST/" 2>/dev/null || true
+          echo "=== Paketinhalt ==="
+          ls -la "$DIST/" | head -20
+
+      - name: Archiv (Linux/macOS)
+        if: matrix.platform != 'windows'
         run: |
-          VERSION=$(cat VERSION)
           cd dist
-          tar czf "../${{ matrix.artifact }}" "ChronoScaleStudio-${VERSION}-linux"
+          tar czf "../${{ matrix.artifact }}.tar.gz" "${{ matrix.artifact }}"
 
-      - name: Package (macOS)
-        if: matrix.platform == 'macos'
-        run: |
-          VERSION=$(cat VERSION)
-          cd dist
-          tar czf "../${{ matrix.artifact }}" "ChronoScaleStudio-${VERSION}-macos"
-
-      - name: Package (Windows)
+      - name: Archiv (Windows)
         if: matrix.platform == 'windows'
         shell: pwsh
         run: |
-          $VERSION = Get-Content VERSION -Raw
-          $VERSION = $VERSION.Trim()
-          Compress-Archive -Path "dist\ChronoScaleStudio-${VERSION}-windows" -DestinationPath "${{ matrix.artifact }}"
+          Compress-Archive -Path "dist\${{ matrix.artifact }}" -DestinationPath "${{ matrix.artifact }}.zip"
 
-      # Upload artifact
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          path: |
+            ${{ matrix.artifact }}.tar.gz
+            ${{ matrix.artifact }}.zip
 
-  # Create GitHub Release when tag is pushed
   release:
     needs: build
     runs-on: ubuntu-latest
@@ -133,7 +151,7 @@ jobs:
       contents: write
     steps:
       - uses: actions/download-artifact@v4
-      - name: Create Release
+      - name: Release erstellen
         uses: softprops/action-gh-release@v2
         with:
           files: |
