@@ -1,0 +1,42 @@
+.
+├── ai
+│   └── scale_ai.py
+├── audio
+│   ├── direct_synth.py
+│   ├── playback_worker.py
+│   └── synth.py
+├── gui
+│   ├── automation_editor.py
+│   ├── __init__.py
+│   ├── main_window.py
+│   ├── scale_browser.py
+│   ├── score_view (Kopie).py
+│   ├── score_view.py
+│   ├── toolbox.py
+│   ├── tools
+│   │   ├── __init__.py
+│   │   └── mouse_tools.py
+│   ├── tracks_panel.py
+│   └── undo_stack.py
+├── main.py
+├── midi
+│   ├── midi_io.py
+│   └── scale_player.py
+├── music
+│   ├── automation.py
+│   ├── events.py
+│   ├── intervals.py
+│   ├── model.py
+│   ├── notes.py
+│   ├── sequence.py
+│   ├── tempo.py
+│   └── tracks.py
+├── osc
+│   └── osc_server.py
+├── rast_test.mid
+├── scales
+│   ├── database.py
+│   └── scales.json
+└── structure.txt
+
+9 directories, 31 files

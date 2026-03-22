@@ -1,0 +1,233 @@
+
+"""MIDI clip rendering to audio via FluidSynth (Phase 4).
+
+Design goal:
+- Provide a pragmatic, reliable way to HEAR instrument tracks (SF2) without
+  implementing a full realtime synth graph yet.
+- Render MIDI notes for a given clip into a temporary WAV file using the
+  system's `fluidsynth` binary, then let the audio engine mix the WAV like a
+  normal audio clip.
+
+This keeps the GUI responsive and works well with PipeWire/ALSA setups.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional, Dict, Any
+import hashlib
+import os
+import subprocess
+import tempfile
+
+try:
+    import mido
+except Exception:  # pragma: no cover
+    mido = None
+
+
+def midi_content_hash(
+    *,
+    notes: Optional[List[Dict[str, Any]]],
+    bpm: float,
+    clip_length_beats: float,
+    sf2_bank: int,
+    sf2_preset: int,
+) -> str:
+    """Return a stable content hash for a MIDI clip.
+
+    This is used as part of the render cache key so we don't re-render the same
+    clip (same notes + same render parameters) again and again.
+
+    Notes are expected to be dictionaries with at least: start, length, pitch,
+    velocity. Additional fields are tolerated but ignored.
+    """
+
+    h = hashlib.sha1()
+    h.update(f"bpm={float(bpm):.9f};len={float(clip_length_beats):.9f};".encode("utf-8"))
+    h.update(f"bank={int(sf2_bank)};preset={int(sf2_preset)};".encode("utf-8"))
+
+    if not notes:
+        h.update(b"notes:[]")
+        return h.hexdigest()
+
+    # Notes can come from older projects as dicts OR from the newer model layer
+    # as MidiNote objects (attributes instead of dict keys). We support both so
+    # old projects load and JACK arrange-prep doesn't explode.
+    def _get(n: Any, key: str, default: Any):
+        if isinstance(n, dict):
+            return n.get(key, default)
+        return getattr(n, key, default)
+
+    # Sort for determinism (UI order should not affect rendering).
+    def _key(n: Any):
+        return (
+            float(_get(n, "start", 0.0)),
+            float(_get(n, "length", 0.0)),
+            int(_get(n, "pitch", 0)),
+            int(_get(n, "velocity", 0)),
+        )
+
+    for n in sorted(notes, key=_key):
+        start = float(_get(n, "start", 0.0))
+        length = float(_get(n, "length", 0.0))
+        pitch = int(_get(n, "pitch", 0))
+        vel = int(_get(n, "velocity", 0))
+        h.update(f"{start:.9f},{length:.9f},{pitch},{vel};".encode("utf-8"))
+
+    return h.hexdigest()
+
+
+@dataclass(frozen=True)
+class RenderKey:
+    clip_id: str
+    sf2_path: str
+    sf2_bank: int
+    sf2_preset: int
+    bpm: float
+    samplerate: int
+    clip_length_beats: float
+    content_hash: str
+
+
+def _cache_dir() -> Path:
+    # User-level cache; safe across projects
+    d = Path(os.path.expanduser("~")) / ".cache" / "Py_DAW"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def _key_to_filename(key: RenderKey) -> str:
+    h = hashlib.sha1(
+        f"{key.clip_id}|{key.sf2_path}|{key.sf2_bank}|{key.sf2_preset}|{key.bpm}|{key.samplerate}|{key.clip_length_beats}|{key.content_hash}".encode(
+            "utf-8"
+        )
+    ).hexdigest()[:16]
+    return f"midi_{key.clip_id}_{h}.wav"
+
+
+def ensure_rendered_wav(
+    *,
+    key: RenderKey,
+    midi_notes: List[Any],
+    clip_start_beats: float,
+    clip_length_beats: float,
+) -> Optional[Path]:
+    """Render notes into a WAV file and return the path, or None on failure.
+
+    `midi_notes` is expected to contain objects with attributes:
+    - pitch (int)
+    - start_beats (float)
+    - length_beats (float)
+    - velocity (int, optional)
+    """
+    if mido is None:
+        return None
+
+    sf2 = Path(key.sf2_path)
+    if not sf2.exists():
+        return None
+
+    out = _cache_dir() / _key_to_filename(key)
+    if out.exists() and out.stat().st_size > 44:
+        return out
+
+    # Build a tiny Standard MIDI file for the clip region.
+    mid = mido.MidiFile(ticks_per_beat=480)
+    track = mido.MidiTrack()
+    mid.tracks.append(track)
+
+    # Tempo meta (microseconds per beat)
+    tempo = mido.bpm2tempo(float(key.bpm))
+    track.append(mido.MetaMessage("set_tempo", tempo=tempo, time=0))
+
+    # Program change: bank/preset
+    # Bank select MSB/LSB: for many SF2, MSB (CC0) is enough.
+    ch = 0
+    track.append(mido.Message("control_change", channel=ch, control=0, value=int(key.sf2_bank) & 0x7F, time=0))
+    track.append(mido.Message("program_change", channel=ch, program=int(key.sf2_preset) & 0x7F, time=0))
+
+    # Convert beats -> ticks
+    def beat_to_ticks(b: float) -> int:
+        return int(round(b * 480))
+
+    events = []
+    # Notes are stored relative to clip start; we normalize into [0, clip_length]
+    for n in midi_notes or []:
+        try:
+            pitch = int(getattr(n, "pitch"))
+            start_b = float(getattr(n, "start_beats"))
+            length_b = float(getattr(n, "length_beats"))
+            vel = int(getattr(n, "velocity", 96))
+        except Exception:
+            continue
+        # clamp to clip range
+        start_b = max(0.0, min(start_b, float(clip_length_beats)))
+        end_b = max(0.0, min(start_b + max(0.0, length_b), float(clip_length_beats)))
+        events.append((start_b, True, pitch, vel))
+        events.append((end_b, False, pitch, 0))
+
+    # Sort by beat; note_off before note_on at same time to avoid stuck notes
+    events.sort(key=lambda e: (e[0], 0 if not e[1] else 1))
+
+    last_tick = 0
+    for beat, is_on, pitch, vel in events:
+        tick = beat_to_ticks(beat)
+        delta = max(0, tick - last_tick)
+        last_tick = tick
+        if is_on:
+            track.append(mido.Message("note_on", channel=ch, note=pitch, velocity=vel, time=delta))
+        else:
+            track.append(mido.Message("note_off", channel=ch, note=pitch, velocity=0, time=delta))
+
+    # End of track
+    track.append(mido.MetaMessage("end_of_track", time=beat_to_ticks(float(clip_length_beats)) - last_tick))
+
+    # Write midi to temp file
+    tmp_mid = Path(tempfile.gettempdir()) / f"pydaw_{key.clip_id}.mid"
+    try:
+        mid.save(tmp_mid.as_posix())
+    except Exception:
+        return None
+
+    # Render to wav via fluidsynth
+    # fluidsynth -ni -r 48000 -F out.wav sf2.mid
+    cmd = [
+        "fluidsynth",
+        "-ni",
+        "-r",
+        str(int(key.samplerate)),
+        "-F",
+        out.as_posix(),
+        sf2.as_posix(),
+        tmp_mid.as_posix(),
+    ]
+    try:
+        # FIXED v0.0.19.7.14: TIMEOUT 30 Sekunden!
+        result = subprocess.run(
+            cmd, 
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, 
+            check=False,  # Don't raise on error
+            timeout=30  # 30 seconds max! ✅
+        )
+        
+        if result.returncode != 0:
+            # FluidSynth failed
+            stderr_msg = result.stderr.decode('utf-8', errors='ignore')[:200] if result.stderr else "Unknown error"
+            raise RuntimeError(f"FluidSynth failed: {stderr_msg}")
+            
+    except subprocess.TimeoutExpired:
+        # FIXED v0.0.19.7.14: FluidSynth hängt!
+        raise RuntimeError("FluidSynth timeout (30s) - clip may be too long or FluidSynth hung")
+    except Exception as e:
+        # leave no half file
+        try:
+            if out.exists():
+                out.unlink()
+        except Exception:
+            pass
+        raise  # Re-raise so caller knows it failed!
+
+    return out if out.exists() and out.stat().st_size > 44 else None

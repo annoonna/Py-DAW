@@ -1,0 +1,1753 @@
+"""Main window (v0.0.19.0).
+
+v0.0.14:
+- Fix: ServiceContainer includes metronome (no crash)
+- Project Settings (central BPM/TS/Grid)
+- Metronome audio click (best effort via sounddevice, non-blocking)
+- Grid/Snap division control (toolbar + project persistence)
+- Automation lanes panel (placeholder, toggleable)
+- MIDI Settings (best effort via mido) + message monitor in status bar
+- JACK/PipeWire-JACK presence (best effort): registers ports to appear in qpwgraph
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+import os
+import subprocess
+import sys
+
+from PyQt6.QtGui import QGuiApplication, QAction, QActionGroup, QKeySequence, QShortcut
+
+from PyQt6.QtWidgets import (
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QSplitter,
+    QFileDialog,
+    QMessageBox,
+    QDockWidget,
+    QInputDialog,
+    QTabWidget,
+    QLabel,
+    QToolButton,
+    QComboBox,
+    QFrame,
+    QToolBar,
+)
+
+from PyQt6.QtCore import Qt, QTimer, QSize
+
+from pydaw.services.container import ServiceContainer
+from pydaw.core.settings import SettingsKeys
+from pydaw.core.settings_store import get_value, set_value
+from .actions import build_actions
+from .transport import TransportPanel
+from .toolbar import ToolBarPanel
+from .arranger import ArrangerView
+from .mixer import MixerPanel, LibraryPanel
+from .track_parameters import TrackParametersPanel
+from .audio_settings_dialog import AudioSettingsDialog
+from .midi_settings_dialog import MidiSettingsDialog
+from .midi_mapping_dialog import MidiMappingDialog
+from .editor_tabs import EditorTabs
+from .clip_launcher import ClipLauncherPanel
+from .time_signature_dialog import TimeSignatureDialog
+from .project_settings_dialog import ProjectSettingsDialog
+
+
+class MainWindow(QMainWindow):
+    def _set_status(self, text: str, timeout_ms: int = 3000) -> None:
+        """Central helper to show a status message.
+
+        Some features (snapshots, SF2 handling, imports) want a single place to
+        report feedback without raising exceptions inside Qt slots.
+        """
+        try:
+            self.statusBar().showMessage(str(text), int(timeout_ms))
+        except Exception:
+            pass
+
+    def _safe_project_call(self, method: str, *args, **kwargs):
+        """Call ProjectService methods defensively.
+
+        PyQt kann bei Exceptions in Slots hart abbrechen. Deshalb: abfangen,
+        in Statusbar melden und weiterlaufen.
+        """
+        try:
+            fn = getattr(self.services.project, method, None)
+            if callable(fn):
+                return fn(*args, **kwargs)
+            self.statusBar().showMessage(f"ProjectService: '{method}' nicht verfügbar.", 4000)
+        except Exception as exc:
+            try:
+                self.services.project.error.emit(str(exc))
+            except Exception:
+                pass
+            self.statusBar().showMessage(f"Fehler in ProjectService.{method}: {exc}", 6000)
+        return None
+
+
+    def _dispatch_edit(self, op: str) -> None:
+        """Dispatch global Edit actions (Copy/Cut/Paste/SelectAll) to the focused panel.
+
+        Rationale: avoids Qt "Ambiguous shortcut" warnings and provides consistent DAW-style editing.
+        Paste in PianoRoll uses the last mouse position (grid anchor) and snaps to the current grid.
+        """
+        try:
+            w = QApplication.focusWidget()
+        except Exception:
+            w = None
+
+        # 1) PianoRoll (inside EditorTabs)
+        try:
+            pr = None
+            et = getattr(self, "editor_tabs", None)
+            if et is not None:
+                pr = getattr(et, "pianoroll", None)
+
+            if pr is not None and w is not None and pr.isVisible() and pr.isAncestorOf(w):
+                c = getattr(pr, "canvas", None)
+                if c is None:
+                    return
+                if op == "copy":
+                    c.copy_selected()
+                    self.statusBar().showMessage("PianoRoll: Copy", 900)
+                    return
+                if op == "cut":
+                    c.cut_selected()
+                    self.statusBar().showMessage("PianoRoll: Cut", 900)
+                    return
+                if op == "paste":
+                    c.paste_at_last_mouse()
+                    self.statusBar().showMessage("PianoRoll: Paste", 900)
+                    return
+                if op == "select_all":
+                    c.select_all()
+                    self.statusBar().showMessage("PianoRoll: Select All", 900)
+                    return
+        except Exception as e:
+            try:
+                self.statusBar().showMessage(f"Edit dispatch error: {e}", 3000)
+            except Exception:
+                pass
+
+        # 2) Other panels (Arranger/ClipLauncher/Mixer) – TODO: implement.
+        try:
+            self.statusBar().showMessage("Edit: noch nicht für dieses Panel implementiert.", 2000)
+        except Exception:
+            pass
+    def __init__(self, services: ServiceContainer | None = None):
+        super().__init__()
+        self.services = services or ServiceContainer.create_default()
+
+        self.actions = build_actions(self)
+        self._build_menus()
+        self._build_layout()
+        self._wire_actions()
+
+        # Sync view menu checks with current widget state (without emitting signals)
+        try:
+            self.actions.view_toggle_notation.blockSignals(True)
+            self.actions.view_toggle_notation.setChecked(self.editor_tabs.is_notation_tab_visible())
+        finally:
+            self.actions.view_toggle_notation.blockSignals(False)
+        # Undo/Redo state updates
+        try:
+            self.services.project.undo_changed.connect(self._update_undo_redo_actions)
+        except Exception:
+            pass
+        self._update_undo_redo_actions()
+
+        # Make sure the window is usable on different desktop sizes/DPI settings.
+        self._fit_to_screen()
+
+        # Prime parameter inspector with the current track selection.
+        try:
+            self._on_track_selected(self._selected_track_id())
+        except Exception:
+            pass
+
+        self.statusBar().showMessage(
+            "Bereit (v0.0.19.3.5: Editor-Tabs PianoRoll + Notation)"
+        )
+
+        self.services.project.project_changed.connect(self._update_window_title)
+        self.services.project.status.connect(lambda m: self.statusBar().showMessage(m, 3000))
+        self.services.project.error.connect(self._show_error)
+        try:
+            self.services.audio_engine.error.connect(self._show_error)
+            self.services.audio_engine.running_changed.connect(
+                lambda r: self.statusBar().showMessage(
+                    "Audio: läuft" if r else "Audio: gestoppt", 1200
+                )
+            )
+        except Exception:
+            pass
+        self.services.midi.message_received.connect(lambda t: self.statusBar().showMessage(t, 1200))
+        self._update_window_title(self.services.project.display_name())
+
+        # JACK per-track monitoring routes (Input Monitoring per Track)
+        try:
+            self.services.project.project_updated.connect(self._update_jack_monitor_routes)
+        except Exception:
+            pass
+        try:
+            self._update_jack_monitor_routes()
+        except Exception:
+            pass
+
+    # --- menus
+
+def _build_menus(self) -> None:
+    """Pro-DAW-Layout: klassische QMenuBar ausblenden.
+
+    Safety-First: Actions/Shortcuts bleiben aktiv; wir verstecken nur die
+    Menüleiste (Pro-DAW arbeitet primär mit Header/Shortcuts).
+    """
+    try:
+        mb = self.menuBar()
+        mb.clear()
+        mb.setVisible(False)
+    except Exception:
+        pass
+
+def _build_layout(self) -> None:
+    # --- Header/Transport (Pro-DAW Top-Bar)
+    header = QWidget()
+    header.setObjectName("chronoHeader")
+    header_layout = QHBoxLayout(header)
+    header_layout.setContentsMargins(8, 6, 8, 6)
+    header_layout.setSpacing(8)
+
+    logo = QLabel("🐍 ChronoScaleStudio")
+    logo.setObjectName("chronoLogo")
+    header_layout.addWidget(logo)
+
+    # Open/Save Buttons (wired to existing actions)
+    btn_open = QToolButton()
+    btn_open.setText("📂")
+    btn_open.setToolTip("Projekt öffnen (Ctrl+O)")
+    btn_open.clicked.connect(lambda: self.actions.file_open.trigger())
+    header_layout.addWidget(btn_open)
+
+    btn_save = QToolButton()
+    btn_save.setText("💾")
+    btn_save.setToolTip("Projekt speichern (Ctrl+S)")
+    btn_save.clicked.connect(lambda: self.actions.file_save.trigger())
+    header_layout.addWidget(btn_save)
+
+    sep1 = QFrame()
+    sep1.setFrameShape(QFrame.Shape.VLine)
+    sep1.setFrameShadow(QFrame.Shadow.Plain)
+    sep1.setObjectName("chronoSep")
+    header_layout.addWidget(sep1)
+
+    # Transport widget (Play/Stop/Rec/Loop/BPM/TS/Time)
+    self.transport = TransportPanel()
+    header_layout.addWidget(self.transport, 1)
+
+    # Hidden legacy toolbar (kept for safety / wiring / persistence)
+    self.tools = ToolBarPanel()
+    self.tools.setVisible(False)
+
+    # Grid/Snap in header (Pro-DAW-like)
+    header_layout.addWidget(QLabel("Grid:"))
+    self.header_grid = QComboBox()
+    self.header_grid.addItems(["1/1", "1/2", "1/4", "1/8", "1/16", "1/32", "1/64"])
+    self.header_grid.setFixedWidth(90)
+    header_layout.addWidget(self.header_grid)
+
+    self.setMenuWidget(header)
+
+    # --- Initialize UI from project state
+    proj = self.services.project.ctx.project
+    try:
+        self.transport.bpm.setValue(int(round(float(getattr(proj, "bpm", 120.0)))))
+    except Exception:
+        self.transport.bpm.setValue(120)
+
+    ts = str(getattr(proj, "time_signature", "4/4") or "4/4")
+    self.transport.set_time_signature(ts)
+
+    snap = str(getattr(proj, "snap_division", "1/16") or "1/16")
+    try:
+        self.tools.cmb_grid.setCurrentText(snap)
+    except Exception:
+        pass
+    if snap in {"1/1", "1/2", "1/4", "1/8", "1/16", "1/32", "1/64"}:
+        self.header_grid.blockSignals(True)
+        self.header_grid.setCurrentText(snap)
+        self.header_grid.blockSignals(False)
+
+    # Header grid wiring (kept local; tools wiring remains in _wire_actions)
+    self.header_grid.currentTextChanged.connect(self._on_grid_changed_from_ui)
+
+    # --- Arranger (center)
+    self.arranger = ArrangerView(self.services.project)
+    # Inject transport into arranger canvas for DAW-consistent loop behavior
+    try:
+        self.arranger.canvas.set_transport(self.services.transport)
+    except Exception:
+        pass
+
+    # automation panel lives inside arranger view
+    self.automation = self.arranger.automation
+    self.arranger.set_snap_division(snap)
+    self.arranger.set_automation_visible(False)
+
+    # Arranger wiring
+    self.arranger.clip_activated.connect(self._on_clip_activated)
+    self.arranger.clip_selected.connect(self._on_clip_selected)
+    self.arranger.request_rename_clip.connect(self._rename_clip_dialog)
+    self.arranger.request_duplicate_clip.connect(lambda cid: self.services.project.duplicate_clip(cid))
+    self.arranger.request_delete_clip.connect(lambda cid: self.services.project.delete_clip(cid))
+    self.arranger.status_message.connect(self._set_status)  # Keyboard shortcuts (v0.0.19.7.0)
+
+    # loop edits in arranger drive transport
+    self.arranger.canvas.loop_region_committed.connect(self._on_arranger_loop_committed)
+    self.arranger.canvas.request_import_audio.connect(self._import_audio_at_position)
+    self.arranger.canvas.request_add_track.connect(self._add_track_from_context_menu)  # FIXED v0.0.19.7.19
+
+    # Synchronize automation editor time range with Arranger scroll/zoom
+    self.arranger.view_range_changed.connect(self.automation.set_view_range)
+    try:
+        s, e = self.arranger.visible_range_beats()
+        self.automation.set_view_range(s, e)
+    except Exception:
+        pass
+
+    # Track selection drives parameter inspector
+    self.arranger.tracks.selected_track_changed.connect(self._on_track_selected)
+
+    # --- Left tool strip (Pro-DAW-like)
+    tool_strip = QWidget()
+    tool_strip.setObjectName("chronoToolStrip")
+    tool_layout = QVBoxLayout(tool_strip)
+    tool_layout.setContentsMargins(0, 0, 0, 0)
+    tool_layout.setSpacing(6)
+
+    def _mk_tool_btn(text: str, tool: str, tip: str) -> QToolButton:
+        b = QToolButton()
+        b.setText(text)
+        b.setToolTip(tip)
+        b.setCheckable(True)
+        b.setAutoExclusive(True)
+        b.setFixedSize(QSize(44, 44))
+        b.clicked.connect(lambda: self._on_tool_changed_from_toolbar(tool))
+        return b
+
+    self.btn_tool_select = _mk_tool_btn("↖", "select", "Select")
+    self.btn_tool_draw = _mk_tool_btn("✎", "draw", "Draw")
+    self.btn_tool_erase = _mk_tool_btn("⌫", "erase", "Erase")
+    self.btn_tool_knife = _mk_tool_btn("✂", "knife", "Knife")
+
+    self.btn_tool_select.setChecked(True)
+    tool_layout.addWidget(self.btn_tool_select)
+    tool_layout.addWidget(self.btn_tool_draw)
+    tool_layout.addWidget(self.btn_tool_erase)
+    tool_layout.addWidget(self.btn_tool_knife)
+    tool_layout.addStretch(1)
+
+    center = QWidget()
+    center_layout = QHBoxLayout(center)
+    center_layout.setContentsMargins(8, 8, 8, 8)
+    center_layout.setSpacing(8)
+    center_layout.addWidget(tool_strip, 0)
+    center_layout.addWidget(self.arranger, 1)
+    self.setCentralWidget(center)
+
+    # --- Right Browser Dock (toggle with 'B')
+    from .device_browser import DeviceBrowser
+    self.library = DeviceBrowser()
+    self.track_params = TrackParametersPanel(project=self.services.project)
+
+    right_tabs = QTabWidget()
+    right_tabs.addTab(self.library, "Browser")
+    right_tabs.addTab(self.track_params, "Parameter")
+
+    self.browser_dock = QDockWidget("Browser", self)
+    self.browser_dock.setWidget(right_tabs)
+    self.browser_dock.setAllowedAreas(Qt.DockWidgetArea.RightDockWidgetArea)
+    self.browser_dock.setMinimumWidth(300)
+    self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.browser_dock)
+
+    self._shortcut_toggle_browser = QShortcut(QKeySequence("B"), self)
+    self._shortcut_toggle_browser.setContext(Qt.ShortcutContext.ApplicationShortcut)
+    self._shortcut_toggle_browser.activated.connect(
+        lambda: self.browser_dock.setVisible(not self.browser_dock.isVisible())
+    )
+
+    # --- Bottom Panel (Editor + Mixer tabs)
+    # Editor Dock (Variant A: Tab system)
+    self.editor_tabs = EditorTabs(
+        self.services.project,
+        transport=self.services.transport,
+        status_cb=lambda t, ms=1500: self.statusBar().showMessage(str(t), int(ms)),
+        enable_notation_tab=bool(get_value(SettingsKeys.ui_enable_notation_tab, False)),
+    )
+    self.pianoroll_dock = QDockWidget("Editor", self)
+    self.pianoroll_dock.setWidget(self.editor_tabs)
+    self.pianoroll_dock.setAllowedAreas(
+        Qt.DockWidgetArea.BottomDockWidgetArea | Qt.DockWidgetArea.RightDockWidgetArea
+    )
+    self.pianoroll_dock.setMinimumHeight(380)
+    self.pianoroll_dock.setMinimumWidth(600)
+    self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.pianoroll_dock)
+    self.pianoroll_dock.show()
+
+    # Keep editor selection in sync with the currently active clip.
+    self.services.project.active_clip_changed.connect(self.editor_tabs.set_clip)
+
+    # Mixer Dock (tab next to editor)
+    self.mixer = MixerPanel(self.services.project, self.services.audio_engine)
+    self.mixer_dock = QDockWidget("Mixer", self)
+    self.mixer_dock.setWidget(self.mixer)
+    self.mixer_dock.setAllowedAreas(Qt.DockWidgetArea.BottomDockWidgetArea)
+    self.addDockWidget(Qt.DockWidgetArea.BottomDockWidgetArea, self.mixer_dock)
+    self.tabifyDockWidget(self.pianoroll_dock, self.mixer_dock)
+    self.pianoroll_dock.raise_()
+
+    # Clip Launcher Dock
+    self.launcher_panel = ClipLauncherPanel(self.services.project, self.services.launcher)
+    self.launcher_panel.clip_activated.connect(self._on_clip_activated)
+
+    self.launcher_dock = QDockWidget("Clip Launcher", self)
+    self.launcher_dock.setWidget(self.launcher_panel)
+    self.launcher_dock.setAllowedAreas(
+        Qt.DockWidgetArea.RightDockWidgetArea | Qt.DockWidgetArea.BottomDockWidgetArea
+    )
+    self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, self.launcher_dock)
+    self.launcher_dock.hide()
+
+    # TransportService -> UI
+    self.services.transport.playhead_changed.connect(lambda beat: self._update_playhead(beat))
+    self.services.transport.loop_changed.connect(self._on_transport_loop_changed)
+    self.services.transport.time_signature_changed.connect(self._on_transport_ts_changed)
+    self.services.transport.metronome_tick.connect(self._on_metronome_tick)
+
+    # Initialize TS into transport service
+    self.services.transport.set_time_signature(ts)
+
+    # loop state into UI + arranger
+    self._on_transport_loop_changed(
+        self.services.transport.loop_enabled,
+        self.services.transport.loop_start,
+        self.services.transport.loop_end,
+    )
+    self._update_playhead(self.services.transport.current_beat)
+
+    # --- Styling (Anthrazit / Pro-DAW-ish)
+    qss = """
+    QMainWindow { background: #212121; color: #BBBBBB; }
+    QWidget { color: #BBBBBB; }
+    #chronoHeader { background: #212121; }
+    #chronoLogo { font-weight: 700; padding-right: 6px; }
+    #chronoSep { color: #2A2A2A; }
+    QToolButton {
+        background: transparent;
+        border: 1px solid #2A2A2A;
+        border-radius: 8px;
+        padding: 6px;
+        color: #DDDDDD;
+    }
+    QToolButton:hover { background: #2B2B2B; }
+    QToolButton:checked { background: #303030; border: 1px solid #3A3A3A; }
+    QDockWidget::title {
+        background: #1C1C1C;
+        padding: 6px;
+    }
+    QTabBar::tab {
+        background: #1C1C1C;
+        padding: 6px 10px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+    }
+    QTabBar::tab:selected { background: #2A2A2A; }
+    """
+    try:
+        self.setStyleSheet(qss)
+    except Exception:
+        pass
+
+    def _fit_to_screen(self) -> None:
+        """Resize and center the window to fit the active desktop."""
+        screen = self.screen() or QGuiApplication.primaryScreen()
+        if not screen:
+            return
+        geo = screen.availableGeometry()
+        if geo.width() <= 0 or geo.height() <= 0:
+            return
+
+        # Use a conservative default size that still leaves room for panels.
+        target_w = int(geo.width() * 0.92)
+        target_h = int(geo.height() * 0.9)
+        self.resize(max(900, min(target_w, geo.width())), max(600, min(target_h, geo.height())))
+
+        # Center on screen
+        frame = self.frameGeometry()
+        frame.moveCenter(geo.center())
+        self.move(frame.topLeft())
+
+    # --- transport sync
+
+    def _on_arranger_loop_committed(self, enabled: bool, start: float, end: float) -> None:
+        self.services.transport.set_loop(bool(enabled))
+        self.services.transport.set_loop_region(float(start), float(end))
+
+    def _on_transport_loop_changed(self, enabled: bool, start: float, end: float) -> None:
+        self.arranger.canvas.set_loop_region(bool(enabled), float(start), float(end))
+        if self.transport.chk_loop.isChecked() != bool(enabled):
+            self.transport.chk_loop.blockSignals(True)
+            self.transport.chk_loop.setChecked(bool(enabled))
+            self.transport.chk_loop.blockSignals(False)
+
+    def _on_transport_ts_changed(self, ts: str) -> None:
+        self.transport.set_time_signature(ts)
+        self.arranger.canvas.update()
+
+    def _update_playhead(self, beat: float) -> None:
+        self.arranger.canvas.set_playhead(float(beat))
+        self.transport.set_time(float(beat), self.services.transport.bpm)
+        try:
+            self.automation.set_playhead(float(beat))
+        except Exception:
+            pass
+
+    # --- metronome click
+
+    def _on_metronome_tick(self, bar_index: int, beat_in_bar: int, is_countin: bool) -> None:
+        prefix = "Count-In" if is_countin else "Metronom"
+        self.statusBar().showMessage(f"{prefix}: Bar {bar_index}, Beat {beat_in_bar}", 350)
+
+        # audio click (best effort): accent on downbeat
+        accent = (beat_in_bar == 1)
+        try:
+            self.services.metronome.play_click(accent=accent)
+        except Exception:
+            pass
+
+    # --- wiring
+
+    def _wire_actions(self) -> None:
+        # File
+        self.actions.file_new.triggered.connect(self._new_project)
+        self.actions.file_open.triggered.connect(self._open_project)
+        self.actions.file_save.triggered.connect(self._save_project)
+        self.actions.file_save_as.triggered.connect(self._save_project_as)
+        self.actions.file_import_audio.triggered.connect(self._import_audio)
+        self.actions.file_import_midi.triggered.connect(self._import_midi)
+        self.actions.file_export.triggered.connect(self._export_audio_placeholder)
+        self.actions.file_export_midi_clip.triggered.connect(self._export_midi_clip)  # FIXED v0.0.19.7.15
+        self.actions.file_export_midi_track.triggered.connect(self._export_midi_track)  # FIXED v0.0.19.7.15
+        self.actions.file_exit.triggered.connect(self.close)
+
+        # View
+        self.actions.view_dummy.triggered.connect(lambda: self.statusBar().showMessage("Ansicht (Platzhalter)", 2000))
+        self.actions.view_toggle_pianoroll.toggled.connect(self._toggle_pianoroll)
+        self.actions.view_toggle_notation.toggled.connect(self._toggle_notation)
+        self.actions.view_toggle_cliplauncher.toggled.connect(self._toggle_cliplauncher)
+        self.actions.view_toggle_automation.toggled.connect(self._toggle_automation)
+
+        # Edit (Undo/Redo)
+        self.actions.edit_undo.triggered.connect(self.services.project.undo)
+        self.actions.edit_redo.triggered.connect(self.services.project.redo)
+        self.actions.edit_cut.triggered.connect(lambda: self._dispatch_edit('cut'))
+        self.actions.edit_copy.triggered.connect(lambda: self._dispatch_edit('copy'))
+        self.actions.edit_paste.triggered.connect(lambda: self._dispatch_edit('paste'))
+        self.actions.edit_select_all.triggered.connect(lambda: self._dispatch_edit('select_all'))
+
+        # Project / tracks
+        self.actions.project_add_audio_track.triggered.connect(lambda: self._safe_project_call('add_track', 'audio'))
+        self.actions.project_add_instrument_track.triggered.connect(lambda: self._safe_project_call('add_track', 'instrument'))
+        self.actions.project_add_bus_track.triggered.connect(lambda: self._safe_project_call('add_track', 'bus'))
+        self.actions.project_add_placeholder_clip.triggered.connect(self._add_clip_to_selected_track)
+        self.actions.project_remove_selected_track.triggered.connect(self._remove_selected_track)
+        self.actions.project_time_signature.triggered.connect(self._show_time_signature)
+        self.actions.project_settings.triggered.connect(self._show_project_settings)
+        self.actions.project_save_snapshot.triggered.connect(self._save_snapshot)
+        self.actions.project_load_snapshot.triggered.connect(self._load_snapshot)
+
+        # Audio + MIDI dialogs
+        self.actions.audio_settings.triggered.connect(self._show_audio_settings)
+        self.actions.audio_prerender_midi.triggered.connect(lambda: self._start_midi_prerender(show_dialog=True))
+        self.actions.audio_prerender_selected_clip.triggered.connect(self._on_prerender_selected_clips)
+        self.actions.audio_prerender_selected_track.triggered.connect(self._on_prerender_selected_track)
+        self.actions.midi_settings.triggered.connect(self._show_midi_settings)
+        self.actions.midi_mapping.triggered.connect(self._show_midi_mapping)
+
+        # Help
+        self.actions.help_workbook.triggered.connect(self._show_workbook)
+
+        # Transport panel
+        self.transport.bpm_changed.connect(self._on_bpm_changed_from_ui)
+        self.transport.play_clicked.connect(self._on_play_clicked)
+        self.transport.stop_clicked.connect(self._on_stop_clicked)
+        self.transport.rew_clicked.connect(self.services.transport.rewind)
+        self.transport.ff_clicked.connect(self.services.transport.fast_forward)
+        self.transport.record_clicked.connect(self._on_record_toggled)
+        self.transport.loop_toggled.connect(self.services.transport.set_loop)
+        self.transport.time_signature_changed.connect(self._on_ts_changed_from_ui)
+
+        self.transport.metronome_toggled.connect(self._on_metronome_enabled)
+        self.transport.count_in_changed.connect(self._on_count_in_changed)
+
+        # Toolbar panel
+        self.tools.grid_changed.connect(self._on_grid_changed_from_ui)
+        self.tools.automation_toggled.connect(self._toggle_automation)
+        self.tools.tool_changed.connect(self._on_tool_changed_from_toolbar)
+
+        # Live MIDI edits while playing: restart arrangement playback so the
+        # rendered MIDI->WAV cache is refreshed without requiring manual stop/play.
+        self._recording_active = False
+        self._recording_track_id = None
+        self._recording_start_beat = 0.0
+        self._recording_wav_path = None
+
+        self._midi_refresh_timer = QTimer(self)
+        self._midi_refresh_timer.setSingleShot(True)
+        self._midi_refresh_timer.timeout.connect(self._restart_playback_if_playing)
+        try:
+            self.services.project.midi_notes_committed.connect(self._on_midi_notes_committed)
+        except Exception:
+            pass
+
+        # FIXED v0.0.19.7.2: Sync BPM and Time Signature when project loads!
+        try:
+            self.services.project.project_opened.connect(self._on_project_opened)
+        except Exception:
+            pass
+
+        # Project open/lifecycle: optionally start pre-render so playback is snappy.
+        try:
+            self.services.project.project_opened.connect(self._maybe_autoprerender_after_load)
+        except Exception:
+            pass
+
+        # Pre-render progress hooks (used by Ready-for-Bach progress dialog)
+        self._prerender_dialog = None
+        self._play_after_prerender = False
+        try:
+            self.services.project.prerender_label.connect(self._on_prerender_label)
+            self.services.project.prerender_progress.connect(self._on_prerender_progress)
+            self.services.project.prerender_finished.connect(self._on_prerender_finished)
+        except Exception:
+            pass
+
+
+
+    def _update_undo_redo_actions(self) -> None:
+        try:
+            can_undo = bool(self.services.project.can_undo())
+            can_redo = bool(self.services.project.can_redo())
+            ulab = self.services.project.undo_label()
+            rlab = self.services.project.redo_label()
+        except Exception:
+            can_undo = False
+            can_redo = False
+            ulab = ""
+            rlab = ""
+
+        self.actions.edit_undo.setEnabled(can_undo)
+        self.actions.edit_redo.setEnabled(can_redo)
+
+        # Pro-DAW-like: show operation name in menu
+        self.actions.edit_undo.setText("Rückgängig" + (f" ({ulab})" if ulab else ""))
+        self.actions.edit_redo.setText("Wiederholen" + (f" ({rlab})" if rlab else ""))
+
+
+    # --- handlers
+
+    def _on_bpm_changed_from_ui(self, bpm: float) -> None:
+        self.services.transport.set_bpm(bpm)
+        self.services.project.ctx.project.bpm = float(bpm)
+        self.services.project.project_updated.emit()
+
+    def _on_ts_changed_from_ui(self, ts: str) -> None:
+        self.services.project.set_time_signature(ts)
+        self.services.transport.set_time_signature(ts)
+        self.statusBar().showMessage(f"Time Signature gesetzt: {ts}", 2000)
+
+    def _on_grid_changed_from_ui(self, div: str) -> None:
+        self.services.project.set_snap_division(div)
+        self.arranger.set_snap_division(div)
+        self.statusBar().showMessage(f"Grid/Snap gesetzt: {div}", 1500)
+
+    def _on_tool_changed_from_toolbar(self, tool: str) -> None:
+        """Handle tool change from toolbar and propagate to arranger canvas."""
+        if hasattr(self.arranger, 'canvas'):
+            self.arranger.canvas.set_tool(str(tool))
+            self.statusBar().showMessage(f"Tool: {tool}", 1000)
+
+    def _on_metronome_enabled(self, enabled: bool) -> None:
+        self.services.transport.set_metronome(bool(enabled))
+        # Enable click service either when metronome enabled or count-in > 0
+        enabled_click = bool(enabled) or int(self.services.transport.count_in_bars) > 0
+        self.services.metronome.set_enabled(enabled_click)
+
+    def _on_count_in_changed(self, bars: int) -> None:
+        self.services.transport.set_count_in_bars(int(bars))
+        enabled_click = self.transport.chk_met.isChecked() or int(bars) > 0
+        self.services.metronome.set_enabled(enabled_click)
+
+    def _on_record_toggled(self, enabled: bool) -> None:
+        """Start/stop audio recording (Phase: JACK first).
+
+        Current scope (v0.0.19.2.9):
+        - Records first stereo input pair (in_L1/in_R1) via JackClientService
+        - On stop, imports the WAV into project media and creates an audio clip
+          on the first armed track (or an audio track if none armed).
+        """
+        enabled = bool(enabled)
+        # Only JACK backend for now
+        if str(self.services.audio_engine.backend) != "jack":
+            self.statusBar().showMessage("Recording: aktuell nur im JACK-Backend (Audio → Einstellungen) unterstützt.", 3000)
+            try:
+                self.transport.btn_rec.blockSignals(True)
+                self.transport.btn_rec.setChecked(False)
+                self.transport.btn_rec.blockSignals(False)
+            except Exception:
+                pass
+            return
+
+        if enabled and not self._recording_active:
+            # choose armed track
+            tid = None
+            try:
+                for t in self.services.project.ctx.project.tracks:
+                    if bool(getattr(t, "record_arm", False)):
+                        tid = str(t.id)
+                        break
+            except Exception:
+                tid = None
+            if not tid:
+                # fallback: ensure audio track
+                try:
+                    tid = str(self.services.project.ensure_audio_track())
+                except Exception:
+                    tid = None
+            if not tid:
+                self.statusBar().showMessage("Recording: Kein Track verfügbar.", 2500)
+                return
+
+            self._recording_track_id = tid
+            self._recording_start_beat = float(getattr(self.services.transport, "current_beat", 0.0) or 0.0)
+
+            # temp wav path (project import happens on stop)
+            import os
+            from pathlib import Path
+            import time
+            cache = Path(os.path.expanduser("~/.cache/Py_DAW/recordings"))
+            cache.mkdir(parents=True, exist_ok=True)
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            wav_path = cache / f"rec_{ts}.wav"
+            self._recording_wav_path = str(wav_path)
+
+            # Determine stereo input pair from the armed track (defaults to 1)
+            pair = 1
+            try:
+                trk = next((t for t in self.services.project.ctx.project.tracks if str(getattr(t, "id", "")) == str(tid)), None)
+                pair = max(1, int(getattr(trk, "input_pair", 1) or 1)) if trk is not None else 1
+            except Exception:
+                pair = 1
+
+            # Push per-track monitoring routes so input monitoring works immediately
+            try:
+                self._update_jack_monitor_routes()
+            except Exception:
+                pass
+
+            try:
+                self.services.jack.start_async(client_name="PyDAW")
+                self.services.jack.start_recording(str(wav_path), stereo_pair=pair)
+                self._recording_active = True
+                self.statusBar().showMessage(f"Recording: läuft (Stereo {pair})…", 2000)
+            except Exception as e:
+                self._recording_active = False
+                self.statusBar().showMessage(f"Recording Start fehlgeschlagen: {e}", 4000)
+                try:
+                    self.transport.btn_rec.blockSignals(True)
+                    self.transport.btn_rec.setChecked(False)
+                    self.transport.btn_rec.blockSignals(False)
+                except Exception:
+                    pass
+            return
+
+        if (not enabled) and self._recording_active:
+            # stop recording and create clip
+            try:
+                self.services.jack.stop_recording()
+            except Exception:
+                pass
+            self._recording_active = False
+
+            try:
+                from pathlib import Path
+                wav_path = Path(str(self._recording_wav_path or ""))
+                if wav_path.exists():
+                    self.services.project.add_audio_clip_from_file_at(
+                        track_id=str(self._recording_track_id or ""),
+                        path=wav_path,
+                        start_beats=float(self._recording_start_beat or 0.0),
+                    )
+                    self.statusBar().showMessage("Recording: Import läuft…", 2000)
+                else:
+                    self.statusBar().showMessage("Recording: WAV-Datei nicht gefunden.", 3000)
+            except Exception as e:
+                self.statusBar().showMessage(f"Recording Import fehlgeschlagen: {e}", 4000)
+
+            self._recording_track_id = None
+            self._recording_wav_path = None
+            self._recording_start_beat = 0.0
+            return
+
+    def _on_play_clicked(self) -> None:
+        """Play button handler.
+
+        If MIDI pre-render is enabled, we optionally build cache..."""
+        try:
+            if bool(self.services.transport.playing):
+                self.services.transport.toggle_play()
+                return
+        except Exception:
+            pass
+
+        # Not currently playing: optional MIDI pre-render gate (performance mode)
+        try:
+            keys = SettingsKeys()
+            wait = self._setting_bool(keys.prerender_wait_before_play, True)
+            show = self._setting_bool(keys.prerender_show_progress_on_play, True)
+        except Exception:
+            wait = True
+            show = True
+
+        if wait:
+            started = False
+            try:
+                started = self._start_midi_prerender(show_dialog=show, play_after=True)
+            except Exception:
+                started = False
+            if started:
+                return
+
+        try:
+            self.services.transport.toggle_play()
+        except Exception:
+            pass
+
+    def _on_stop_clicked(self) -> None:
+        """DAW-style stop: first press stops, second press resets to 0."""
+        try:
+            if bool(self.services.transport.playing):
+                self.services.transport.stop()
+                # Fail-safe: Audio-Engine immer hart stoppen (sounddevice *und* JACK).
+                # Hintergrund: In manchen Versionen ist die Transport->Audio-Bindung
+                # nicht vollständig, oder JACK-Playback läuft ohne Engine-Thread.
+                try:
+                    self.services.audio_engine.stop()
+                except Exception:
+                    pass
+            else:
+                self.services.transport.reset()
+        except Exception:
+            # Fallback: stop only
+            try:
+                self.services.transport.stop()
+            except Exception:
+                pass
+
+        # Zweiter Fail-safe: falls noch JACK-Render aktiv ist, sicher entfernen.
+        try:
+            if hasattr(self.services, "jack"):
+                self.services.jack.clear_render_callback()
+        except Exception:
+            pass
+
+    def _on_midi_notes_committed(self, clip_id: str) -> None:
+        """When MIDI edits are committed, refresh playback while playing."""
+        try:
+            if bool(self.services.transport.playing):
+                # Debounce to avoid restart storms during rapid edits.
+                self._midi_refresh_timer.start(80)
+        except Exception:
+            pass
+
+    def _restart_playback_if_playing(self) -> None:
+        try:
+            if bool(self.services.transport.playing):
+                # Keep transport running; rebuild engine snapshot.
+                self.services.audio_engine.start_arrangement_playback()
+        except Exception:
+            pass
+
+    # --- performance / pre-render
+
+    def _setting_bool(self, key: str, default: bool) -> bool:
+        """Read a bool-like value from SettingsStore."""
+        try:
+            v = str(get_value(key, "1" if default else "0")).strip().lower()
+            return v in ("1", "true", "yes", "on")
+        except Exception:
+            return bool(default)
+
+    def _on_project_opened(self) -> None:
+        """Sync BPM and Time Signature from loaded project to Transport Service.
+        
+        FIXED v0.0.19.7.2: Loop Bug Fix!
+        
+        PROBLEM:
+        - Project saved at 181 BPM
+        - On load: Transport still at 120 BPM (DEFAULT!)
+        - Loop at Bar 6: 
+          - At 181 BPM = 7.95 seconds
+          - At 120 BPM = 7.95 seconds = Bar 4! ❌
+        
+        SOLUTION:
+        - Load BPM from project FIRST
+        - Then loop calculations are correct! ✅
+        """
+        try:
+            project = self.services.project.ctx.project
+            
+            # Set BPM from loaded project
+            bpm = float(getattr(project, "bpm", 120.0))
+            self.services.transport.set_bpm(bpm)
+            print(f"[MainWindow._on_project_opened] Set BPM to {bpm} from project")
+            
+            # Set Time Signature from loaded project
+            ts = str(getattr(project, "time_signature", "4/4"))
+            self.services.transport.set_time_signature(ts)
+            print(f"[MainWindow._on_project_opened] Set Time Signature to {ts} from project")
+            
+            # Update Transport Bar UI
+            self.transport.set_bpm(bpm)
+            self.transport.set_time_signature(ts)
+            
+        except Exception as e:
+            print(f"[MainWindow._on_project_opened] Error syncing BPM/TS: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _maybe_autoprerender_after_load(self) -> None:
+        """Optionally start background pre-render after project/stand load."""
+        try:
+            keys = SettingsKeys()
+            if not self._setting_bool(keys.prerender_auto_on_load, True):
+                return
+            show = self._setting_bool(keys.prerender_show_progress_on_load, False)
+        except Exception:
+            show = False
+        try:
+            self._start_midi_prerender(show_dialog=show, play_after=False)
+        except Exception:
+            pass
+
+    def _on_prerender_selected_clips(self) -> None:
+        """Pre-render only the currently selected MIDI clips (Arranger selection)."""
+        clip_ids = []
+        try:
+            clip_ids = list(getattr(self.arranger.canvas, "selected_clip_ids", set()) or [])
+        except Exception:
+            clip_ids = []
+
+        if not clip_ids:
+            try:
+                self.statusBar().showMessage("Pre-Render: keine Clips ausgewählt.", 2000)
+            except Exception:
+                pass
+            return
+
+        self._start_midi_prerender(show_dialog=True, play_after=False, clip_ids=clip_ids)
+
+    def _on_prerender_selected_track(self) -> None:
+        """Pre-render only the currently selected track (all its MIDI clips)."""
+        try:
+            tid = str(getattr(self.services.project, "selected_track_id", "") or "")
+        except Exception:
+            tid = ""
+
+        if not tid:
+            try:
+                self.statusBar().showMessage("Pre-Render: kein Track ausgewählt.", 2000)
+            except Exception:
+                pass
+            return
+
+        self._start_midi_prerender(show_dialog=True, play_after=False, track_id=tid)
+
+    def _start_midi_prerender(
+        self,
+        show_dialog: bool = False,
+        play_after: bool = False,
+        clip_ids: list[str] | None = None,
+        track_id: str | None = None,
+    ) -> bool:
+        """Start background MIDI->WAV pre-render.
+
+        Returns True if a job was started.
+        """
+        ps = self.services.project
+        try:
+            # Avoid duplicate runs
+            if bool(getattr(ps, "_prerender_running", False)):
+                if show_dialog:
+                    self.statusBar().showMessage("Pre-Render läuft bereits…", 1500)
+                return True
+        except Exception:
+            pass
+
+        try:
+            total = int(ps.midi_prerender_job_count(clip_ids=clip_ids, track_id=track_id))
+        except Exception:
+            total = 0
+
+        if total <= 0:
+            if show_dialog:
+                self.statusBar().showMessage("Pre-Render: keine MIDI-Clips zum Rendern.", 2000)
+            return False
+
+        if play_after:
+            self._play_after_prerender = True
+
+        if show_dialog and self._prerender_dialog is None:
+            try:
+                from PyQt6.QtWidgets import QProgressDialog
+                scope = "alle MIDI-Clips"
+                if clip_ids:
+                    scope = f"{len(clip_ids)} Clip(s)"
+                elif track_id:
+                    scope = "ausgewählter Track"
+                dlg = QProgressDialog(f"MIDI Pre-Render: {scope}…", "Abbrechen", 0, 100, self)
+                dlg.setWindowTitle("Ready for Bach")
+                dlg.setMinimumDuration(0)
+                dlg.setAutoClose(True)
+                dlg.setAutoReset(True)
+                dlg.setValue(0)
+                try:
+                    dlg.canceled.connect(ps.cancel_prerender)
+                except Exception:
+                    pass
+                dlg.show()
+                self._prerender_dialog = dlg
+            except Exception:
+                self._prerender_dialog = None
+
+        try:
+            ps.prerender_midi_clips(clip_ids=clip_ids, track_id=track_id)
+            return True
+        except Exception as e:
+            if show_dialog:
+                self.statusBar().showMessage(f"Pre-Render Start fehlgeschlagen: {e}", 4000)
+            return False
+
+    def _on_prerender_label(self, text: str) -> None:
+        try:
+            if self._prerender_dialog is not None:
+                self._prerender_dialog.setLabelText(str(text))
+                return
+        except Exception:
+            pass
+        try:
+            self.statusBar().showMessage(str(text), 1500)
+        except Exception:
+            pass
+
+    def _on_prerender_progress(self, percent: int) -> None:
+        try:
+            if self._prerender_dialog is not None:
+                self._prerender_dialog.setValue(int(percent))
+        except Exception:
+            pass
+
+    def _on_prerender_finished(self, ok: bool) -> None:
+        try:
+            if self._prerender_dialog is not None:
+                try:
+                    self._prerender_dialog.setValue(100)
+                except Exception:
+                    pass
+                try:
+                    self._prerender_dialog.close()
+                except Exception:
+                    pass
+                self._prerender_dialog = None
+        except Exception:
+            self._prerender_dialog = None
+
+        if ok:
+            try:
+                self.statusBar().showMessage("Pre-Render fertig.", 2000)
+            except Exception:
+                pass
+        else:
+            try:
+                self.statusBar().showMessage("Pre-Render abgebrochen/fehlgeschlagen.", 3000)
+            except Exception:
+                pass
+
+        if bool(self._play_after_prerender):
+            self._play_after_prerender = False
+            try:
+                self.services.transport.toggle_play()
+            except Exception:
+                pass
+
+    # --- dialogs
+
+    def _show_midi_settings(self) -> None:
+        dlg = MidiSettingsDialog(self.services.midi, self)
+        dlg.exec()
+
+    def _show_midi_mapping(self) -> None:
+        try:
+            dlg = MidiMappingDialog(self.services.midi, parent=self)
+            dlg.exec()
+        except Exception as e:
+            try:
+                self.statusBar().showMessage(f"MIDI-Mapping konnte nicht geöffnet werden: {e}", 4000)
+            except Exception:
+                pass
+
+    def _show_time_signature(self) -> None:
+        cur = getattr(self.services.project.ctx.project, "time_signature", "4/4")
+        dlg = TimeSignatureDialog(current=cur, parent=self)
+        if dlg.exec() == dlg.DialogCode.Accepted:
+            self._on_ts_changed_from_ui(dlg.value())
+
+    def _show_project_settings(self) -> None:
+        proj = self.services.project.ctx.project
+        dlg = ProjectSettingsDialog(
+            bpm=float(getattr(proj, "bpm", 120.0)),
+            time_signature=str(getattr(proj, "time_signature", "4/4")),
+            snap_division=str(getattr(proj, "snap_division", "1/16")),
+            parent=self,
+        )
+        if dlg.exec() == dlg.DialogCode.Accepted:
+            bpm, ts, grid = dlg.values()
+            self.transport.bpm.setValue(int(round(bpm)))
+            self._on_ts_changed_from_ui(ts)
+            self.tools.cmb_grid.setCurrentText(grid)
+            self._on_grid_changed_from_ui(grid)
+            self.statusBar().showMessage("Project Settings angewendet.", 2000)
+
+    def _restart_app(self, via_pw_jack: bool = False) -> None:
+        """Startet PyDAW neu (bei JACK/PipeWire Wechseln nötig).
+
+        Unter PipeWire ist JACK oftmals nur mit `pw-jack` erreichbar.
+        """
+        # Wichtig: Restart muss das aktuelle Terminal behalten (stdout/stderr),
+        # damit Debug-Ausgaben sichtbar bleiben. Daher kein subprocess.Popen()+quit,
+        # sondern Prozess-Ersetzung via exec.
+        main_script = os.path.abspath(sys.argv[0] or "main.py")
+        argv = [sys.executable, main_script] + sys.argv[1:]
+        env = os.environ.copy()
+        # Unbuffered, damit Logs nicht verschwinden.
+        env.setdefault("PYTHONUNBUFFERED", "1")
+        if via_pw_jack:
+            env["PYDAW_PWJACK"] = "1"
+
+        # Aktuelles Projekt nach Restart wieder öffnen.
+        try:
+            cur = getattr(self.services.project.ctx, "path", None)
+            if cur:
+                env["PYDAW_REOPEN_PROJECT"] = str(cur)
+        except Exception:
+            pass
+
+        def _do_exec() -> None:
+            try:
+                try:
+                    import sys as _sys
+                    _sys.stdout.flush()
+                    _sys.stderr.flush()
+                except Exception:
+                    pass
+                if via_pw_jack:
+                    os.execvpe("pw-jack", ["pw-jack"] + argv, env)
+                else:
+                    os.execvpe(sys.executable, argv, env)
+            except Exception as e:
+                self.statusBar().showMessage(f"Neustart fehlgeschlagen: {e}", 8000)
+
+        # Kurz in die Eventloop zurück, damit Dialog/Statusbar noch zeichnen kann.
+        QTimer.singleShot(50, _do_exec)
+
+    def _show_workbook(self) -> None:
+        """Open TEAM workbook dialog (Help -> Arbeitsmappe)."""
+        try:
+            from .workbook_dialog import WorkbookDialog
+            dlg = WorkbookDialog(parent=self)
+            dlg.exec()
+        except Exception as e:
+            try:
+                self._show_error(f"Arbeitsmappe konnte nicht geöffnet werden: {e}")
+            except Exception:
+                pass
+
+    def _show_audio_settings(self) -> None:
+        dlg = AudioSettingsDialog(self.services.audio_engine, jack=self.services.jack, parent=self)
+        if dlg.exec() == dlg.DialogCode.Accepted:
+            if getattr(dlg, "restart_requested", False):
+                via_pw = bool(getattr(dlg, "restart_via_pw_jack", False))
+                self.statusBar().showMessage("Audio-Einstellungen: Neustart wird durchgeführt...", 2000)
+                self._restart_app(via_pw_jack=via_pw)
+                return
+            self.statusBar().showMessage("Audio-Einstellungen gespeichert.", 2000)
+
+    # --- file actions
+
+    def _new_project(self) -> None:
+        self.services.project.new_project("Neues Projekt")
+        proj = self.services.project.ctx.project
+        self.transport.bpm.setValue(int(round(proj.bpm)))
+        self._on_ts_changed_from_ui(getattr(proj, "time_signature", "4/4"))
+        self.tools.cmb_grid.setCurrentText(getattr(proj, "snap_division", "1/16"))
+        self.arranger.set_snap_division(getattr(proj, "snap_division", "1/16"))
+
+    def _update_jack_monitor_routes(self) -> None:
+        """Push per-track monitoring routes into the JACK client.
+
+        - Each audio/bus track can enable monitoring ("I")
+        - Each track chooses an input stereo pair (Stereo 1..N)
+        - Output pair is reserved for future submix routing (defaults to Out 1)
+        """
+        try:
+            if str(getattr(self.services.audio_engine, "backend", "")) != "jack":
+                return
+        except Exception:
+            return
+
+        routes: list[tuple[int, int, float]] = []
+        try:
+            for t in self.services.project.ctx.project.tracks:
+                if getattr(t, "kind", "") not in ("audio", "bus"):
+                    continue
+                if not bool(getattr(t, "monitor", False)):
+                    continue
+                ip = max(1, int(getattr(t, "input_pair", 1) or 1))
+                op = max(1, int(getattr(t, "output_pair", 1) or 1))
+                gain = float(getattr(t, "volume", 1.0) or 1.0)
+                routes.append((ip, op, gain))
+        except Exception:
+            routes = []
+
+        try:
+            self.services.jack.set_monitor_routes(routes)
+        except Exception:
+            pass
+
+    def _open_project(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Projekt öffnen",
+            "",
+            "Py DAW Projekt (*.pydaw.json *.json);;Alle Dateien (*)",
+        )
+        if not path:
+            return
+        self.services.project.open_project(Path(path))
+
+    def _save_project(self) -> None:
+        ctx = self.services.project.ctx
+        if ctx.path:
+            self.services.project.save_project_as(ctx.path)
+        else:
+            self._save_project_as()
+
+    def _save_project_as(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Projekt speichern",
+            "",
+            "Py DAW Projekt (*.pydaw.json);;JSON (*.json);;Alle Dateien (*)",
+        )
+        if not path:
+            return
+        self.services.project.save_project_as(Path(path))
+
+    def _save_snapshot(self) -> None:
+        """Speichert einen Projektstand (Snapshot) in <Projektordner>/stamps."""
+        ctx = self.services.project.ctx
+        if not ctx.path:
+            self._set_status("Bitte zuerst das Projekt speichern (Datei → Speichern).")
+            return
+
+        label, ok = QInputDialog.getText(
+            self,
+            "Projektstand speichern",
+            "Name/Notiz (optional):",
+        )
+        if not ok:
+            return
+        self.services.project.save_snapshot(str(label).strip())
+
+    def _load_snapshot(self) -> None:
+        """Lädt einen Projektstand (Snapshot) aus <Projektordner>/stamps."""
+        ctx = self.services.project.ctx
+        if not ctx.path:
+            self._set_status("Kein Projektpfad vorhanden. Bitte zuerst ein Projekt speichern/öffnen.")
+            return
+
+        stamps_dir = ctx.path.parent / "stamps"
+        stamps_dir.mkdir(parents=True, exist_ok=True)
+
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Projektstand laden",
+            str(stamps_dir),
+            "Projektstände (*.pydaw.json *.json);;Alle Dateien (*)",
+        )
+        if not path:
+            return
+        self.services.project.load_snapshot(Path(path))
+
+    def _import_audio(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Audio importieren",
+            "",
+            "Audio (*.wav *.flac *.ogg *.mp3 *.m4a *.aac *.mp4);;Alle Dateien (*)",
+        )
+        if not path:
+            return
+        self._safe_project_call('import_audio', Path(path))
+
+    
+    def _import_audio_at_position(self, track_id: str, start_beats: float) -> None:
+        """Import an audio file and place it at (track_id, start_beats)."""
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Audio importieren",
+            "",
+            "Audio (*.wav *.flac *.ogg *.mp3 *.m4a *.aac *.mp4);;Alle Dateien (*)",
+        )
+        if not path:
+            return
+        self._safe_project_call('import_audio_to_track_at', Path(path), track_id=str(track_id), start_beats=float(start_beats))
+
+    def _import_midi(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "MIDI importieren",
+            "",
+            "MIDI (*.mid *.midi);;Alle Dateien (*)",
+        )
+        if not path:
+            return
+        self._safe_project_call(
+            'import_midi',
+            Path(path),
+            track_id=self.services.project.active_track_id,
+            start_beats=0.0,
+        )
+
+    def _add_track_from_context_menu(self, track_kind: str) -> None:
+        """FIXED v0.0.19.7.19: Add track from arranger context menu.
+        
+        Args:
+            track_kind: "audio", "instrument", or "bus"
+        """
+        self._safe_project_call('add_track', track_kind)
+        self.statusBar().showMessage(f"{track_kind.capitalize()} Track hinzugefügt", 2000)
+
+
+
+    def load_sf2_for_selected_track(self) -> None:
+        """Load a SoundFont (SF2) for an INSTRUMENT track (with selection dialog).
+        
+        FIXED v0.0.19.7.3: Wenn mehrere Instrument Tracks existieren,
+        zeigt Dialog zur Track-Auswahl!
+        """
+        # Get all instrument tracks
+        tracks = self.services.project.ctx.project.tracks
+        instrument_tracks = [t for t in tracks if getattr(t, "kind", "") == "instrument"]
+        
+        if not instrument_tracks:
+            self._set_status("Keine Instrument-Tracks vorhanden. Bitte zuerst einen erstellen.")
+            return
+        
+        # If only one instrument track, use it directly
+        if len(instrument_tracks) == 1:
+            tid = instrument_tracks[0].id
+            trk = instrument_tracks[0]
+        else:
+            # Multiple instrument tracks - show selection dialog
+            # FIXED v0.0.19.7.6: Show only track names (no IDs)
+            track_names = []
+            name_count = {}  # Track duplicate names
+            
+            for t in instrument_tracks:
+                name = getattr(t, 'name', 'Instrument Track')
+                
+                # If duplicate name, add number suffix
+                if name in name_count:
+                    name_count[name] += 1
+                    display_name = f"{name} ({name_count[name]})"
+                else:
+                    name_count[name] = 1
+                    display_name = name
+                
+                track_names.append(display_name)
+            
+            # Try to find currently selected track as default
+            current_tid = getattr(self.services.project, "active_track_id", "") or \
+                         getattr(self.services.project, "selected_track_id", "") or ""
+            default_idx = 0
+            for i, t in enumerate(instrument_tracks):
+                if t.id == current_tid:
+                    default_idx = i
+                    break
+            
+            selected_name, ok = QInputDialog.getItem(
+                self,
+                "Track auswählen",
+                "Für welchen Instrument-Track SF2 laden?",
+                track_names,
+                default_idx,
+                False
+            )
+            
+            if not ok or not selected_name:
+                return
+            
+            # Find selected track
+            selected_idx = track_names.index(selected_name)
+            trk = instrument_tracks[selected_idx]
+            tid = trk.id
+        
+        # File picker for SF2
+        from PyQt6.QtWidgets import QFileDialog
+        path, _ = QFileDialog.getOpenFileName(
+            self, 
+            "SoundFont (SF2) auswählen", 
+            "", 
+            "SoundFont (*.sf2);;Alle Dateien (*)"
+        )
+        if not path:
+            return
+        
+        # Bank and Preset selection
+        bank, ok1 = QInputDialog.getInt(
+            self, 
+            "Bank", 
+            "SoundFont Bank (CC0):", 
+            int(getattr(trk, "sf2_bank", 0)), 
+            0, 127, 1
+        )
+        if not ok1:
+            return
+            
+        preset, ok2 = QInputDialog.getInt(
+            self, 
+            "Preset", 
+            "Program/Preset (0-127):", 
+            int(getattr(trk, "sf2_preset", 0)), 
+            0, 127, 1
+        )
+        if not ok2:
+            return
+        
+        # Apply SF2 to track
+        self.services.project.set_track_soundfont(tid, path, bank=bank, preset=preset)
+        self._set_status(f"SF2 geladen auf Track: {getattr(trk, 'name', 'Instrument')}")
+
+    def _export_audio_placeholder(self) -> None:
+        """FIXED v0.0.19.7.16: Professional Audio Export Dialog (Pro-DAW-Style!)"""
+        from .audio_export_dialog import AudioExportDialog
+        
+        dialog = AudioExportDialog(self.services.project, self)
+        dialog.exec()
+    
+    def _export_midi_clip(self) -> None:
+        """FIXED v0.0.19.7.15: Export selected MIDI clip to .mid file."""
+        from pydaw.audio.midi_export import export_midi_clip
+        
+        # Get selected clip from arranger
+        if not hasattr(self.arranger, 'canvas') or not hasattr(self.arranger.canvas, 'selected_clip_id'):
+            self.statusBar().showMessage("Kein Clip ausgewählt!", 3000)
+            return
+        
+        clip_id = self.arranger.canvas.selected_clip_id
+        if not clip_id:
+            self.statusBar().showMessage("Bitte MIDI Clip auswählen!", 3000)
+            return
+        
+        # Get clip
+        clip = next((c for c in self.services.project.ctx.project.clips if c.id == clip_id), None)
+        if not clip or getattr(clip, "kind", "") != "midi":
+            self.statusBar().showMessage("Nur MIDI Clips können exportiert werden!", 3000)
+            return
+        
+        # Get notes
+        notes = self.services.project.ctx.project.midi_notes.get(clip_id, [])
+        if not notes:
+            self.statusBar().showMessage("Clip hat keine Noten zum Exportieren!", 3000)
+            return
+        
+        # Ask for save location
+        clip_name = getattr(clip, "name", "midi_clip")
+        default_filename = f"{clip_name}.mid"
+        
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            "MIDI Clip exportieren",
+            default_filename,
+            "MIDI Files (*.mid);;All Files (*)"
+        )
+        
+        if not filepath:
+            return
+        
+        # Ensure .mid extension
+        if not filepath.lower().endswith('.mid'):
+            filepath += '.mid'
+        
+        # Export
+        bpm = float(getattr(self.services.project.ctx.project, "bpm", 120.0))
+        success = export_midi_clip(clip, notes, Path(filepath), bpm)
+        
+        if success:
+            self.statusBar().showMessage(f"MIDI exportiert: {Path(filepath).name}", 3000)
+        else:
+            self.statusBar().showMessage("MIDI Export fehlgeschlagen!", 3000)
+    
+    def _export_midi_track(self) -> None:
+        """FIXED v0.0.19.7.15: Export all MIDI clips from selected track to .mid file."""
+        from pydaw.audio.midi_export import export_midi_track
+        
+        # Get selected track
+        track_id = self._selected_track_id()
+        if not track_id:
+            self.statusBar().showMessage("Bitte Track auswählen!", 3000)
+            return
+        
+        track = next((t for t in self.services.project.ctx.project.tracks if t.id == track_id), None)
+        if not track:
+            self.statusBar().showMessage("Track nicht gefunden!", 3000)
+            return
+        
+        # Get all MIDI clips for this track
+        clips = [c for c in self.services.project.ctx.project.clips 
+                if getattr(c, 'track_id', '') == track_id and getattr(c, 'kind', '') == 'midi']
+        
+        if not clips:
+            self.statusBar().showMessage("Track hat keine MIDI Clips zum Exportieren!", 3000)
+            return
+        
+        # Ask for save location
+        track_name = getattr(track, "name", "track")
+        default_filename = f"{track_name}.mid"
+        
+        filepath, _ = QFileDialog.getSaveFileName(
+            self,
+            "MIDI Track exportieren",
+            default_filename,
+            "MIDI Files (*.mid);;All Files (*)"
+        )
+        
+        if not filepath:
+            return
+        
+        # Ensure .mid extension
+        if not filepath.lower().endswith('.mid'):
+            filepath += '.mid'
+        
+        # Export
+        bpm = float(getattr(self.services.project.ctx.project, "bpm", 120.0))
+        midi_notes_map = self.services.project.ctx.project.midi_notes
+        success = export_midi_track(track, self.services.project.ctx.project.clips, midi_notes_map, Path(filepath), bpm)
+        
+        if success:
+            self.statusBar().showMessage(f"Track exportiert: {Path(filepath).name}", 3000)
+        else:
+            self.statusBar().showMessage("MIDI Track Export fehlgeschlagen!", 3000)
+
+    # --- selection helpers
+
+    def _selected_track_id(self) -> str:
+        try:
+            return self.arranger.tracks.selected_track_id()
+        except Exception:
+            return ""
+
+    def _on_track_selected(self, track_id: str) -> None:
+        # Drive the parameter inspector.
+        try:
+            self.track_params.set_track(self.services.project, track_id)
+        except Exception:
+            pass
+
+    def _remove_selected_track(self) -> None:
+        tid = self._selected_track_id()
+        if not tid:
+            return
+        self.services.project.remove_track(tid)
+
+    def _add_clip_to_selected_track(self) -> None:
+        tid = self._selected_track_id()
+        if not tid:
+            return
+        trk = next((t for t in self.services.project.ctx.project.tracks if t.id == tid), None)
+        kind = "midi" if (trk and trk.kind == "instrument") else "audio"
+        before = [c.id for c in self.services.project.ctx.project.clips]
+        self.services.project.add_placeholder_clip_to_track(tid, kind=kind)
+        after = [c.id for c in self.services.project.ctx.project.clips]
+        new_ids = [x for x in after if x not in before]
+        if kind == "midi" and new_ids:
+            self._on_clip_activated(new_ids[-1])
+
+    # --- Arranger selection + context actions
+
+    def _on_clip_selected(self, clip_id: str) -> None:
+        self._safe_project_call('select_clip', clip_id or "")
+
+    def _rename_clip_dialog(self, clip_id: str) -> None:
+        clip = next((c for c in self.services.project.ctx.project.clips if c.id == clip_id), None)
+        if not clip:
+            return
+        text, ok = QInputDialog.getText(self, "Clip umbenennen", "Neuer Name:", text=clip.label)
+        if ok and text.strip():
+            self.services.project.rename_clip(clip_id, text.strip())
+
+    # --- docks / panels
+
+    def _toggle_pianoroll(self, checked: bool) -> None:
+        self.pianoroll_dock.setVisible(bool(checked))
+
+    def _toggle_notation(self, checked: bool) -> None:
+        """Enable/disable the Notation tab (WIP).
+
+        This toggles the Notation editor tab (WIP). The editor is lightweight and safe.
+        """
+        checked = bool(checked)
+        try:
+            set_value(SettingsKeys.ui_enable_notation_tab, checked)
+        except Exception:
+            # settings failure should not block the UI
+            pass
+        try:
+            self.editor_tabs.set_notation_tab_visible(checked)
+            if checked:
+                self.editor_tabs.show_notation()
+        except Exception:
+            # Do not crash the app if something goes wrong
+            pass
+
+    def _toggle_cliplauncher(self, checked: bool) -> None:
+        self.launcher_dock.setVisible(bool(checked))
+
+    def _toggle_automation(self, checked: bool) -> None:
+        self.arranger.set_automation_visible(bool(checked))
+        # keep actions + toolbar in sync
+        if self.actions.view_toggle_automation.isChecked() != bool(checked):
+            self.actions.view_toggle_automation.blockSignals(True)
+            self.actions.view_toggle_automation.setChecked(bool(checked))
+            self.actions.view_toggle_automation.blockSignals(False)
+        if self.tools.btn_auto.isChecked() != bool(checked):
+            self.tools.btn_auto.blockSignals(True)
+            self.tools.btn_auto.setChecked(bool(checked))
+            self.tools.btn_auto.blockSignals(False)
+
+    def _on_clip_activated(self, clip_id: str) -> None:
+        clip = next((c for c in self.services.project.ctx.project.clips if c.id == clip_id), None)
+        if not clip:
+            return
+
+        self.services.project.select_clip(clip_id)
+
+        if clip.kind != "midi":
+            self.statusBar().showMessage("Kein MIDI-Clip (PianoRoll öffnet nur MIDI).", 2000)
+            return
+
+        self.pianoroll_dock.show()
+        try:
+            self.editor_tabs.show_pianoroll()
+        except Exception:
+            pass
+        self.actions.view_toggle_pianoroll.setChecked(True)
+
+    # --- Drag & Drop import (WAV/AIFF/MID)
+
+    def dragEnterEvent(self, event):  # type: ignore[override]
+        md = event.mimeData()
+        if md and md.hasUrls():
+            event.acceptProposedAction()
+        else:
+            event.ignore()
+
+    def dropEvent(self, event):  # type: ignore[override]
+        md = event.mimeData()
+        if not md or not md.hasUrls():
+            event.ignore()
+            return
+
+        paths: list[Path] = []
+        for url in md.urls():
+            try:
+                p = Path(url.toLocalFile())
+            except Exception:
+                continue
+            if p.exists() and p.is_file():
+                paths.append(p)
+
+        if not paths:
+            self.statusBar().showMessage("Keine Datei erkannt.", 2000)
+            return
+
+        imported = 0
+        for p in paths:
+            suf = p.suffix.lower()
+            try:
+                if suf in (".mid", ".midi"):
+                    self.services.project.import_midi(p)
+                    imported += 1
+                elif suf in (".wav", ".aif", ".aiff", ".flac", ".ogg"):
+                    self.services.project.import_audio(p)
+                    imported += 1
+            except Exception as e:  # noqa: BLE001
+                self.statusBar().showMessage(f"Import-Fehler ({p.name}): {e}", 4000)
+
+        if imported:
+            self.statusBar().showMessage(f"Importiert: {imported} Datei(en)", 3000)
+        else:
+            self.statusBar().showMessage("Keine unterstützten Formate (wav/aiff/flac/ogg/mid).", 4000)
+
+    # --- misc
+
+    def _update_window_title(self, text: str | None = None, *args) -> None:
+        if not text:
+            try:
+                text = self.services.project.display_name()
+            except Exception:
+                text = "Projekt"
+        self.setWindowTitle(f"Py DAW — {text}")
+
+    def _show_error(self, msg: str) -> None:
+        QMessageBox.warning(self, "Py DAW", msg)
+
+    def closeEvent(self, event):  # noqa: ANN001
+        try:
+            self.services.metronome.shutdown()
+        except Exception:
+            pass
+        try:
+            self.services.midi.shutdown()
+        except Exception:
+            pass
+        try:
+            self.services.jack.shutdown()
+        except Exception:
+            pass
+        try:
+            self.services.audio_engine.stop()
+        except Exception:
+            pass
+        try:
+            # Newer containers expose a global shutdown hook.
+            if hasattr(self.services, "shutdown"):
+                self.services.shutdown()  # type: ignore[attr-defined]
+        except Exception:
+            pass
+        super().closeEvent(event)

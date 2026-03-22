@@ -1,0 +1,557 @@
+{
+  "Keine Einschränkung": {
+    "Alle Noten": {
+      "description": "Keine Skalenrestriktion. Alle 12 Halbtöne sind erlaubt.",
+      "intervals_cent": [
+        0,
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900,
+        1000,
+        1100,
+        1200
+      ]
+    }
+  },
+  "Kirchentonarten": {
+    "Ionisch (Dur)": {
+      "description": "Kirchentonart Ionisch (Major).",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        500,
+        700,
+        900,
+        1100,
+        1200
+      ]
+    },
+    "Dorisch": {
+      "description": "Kirchentonart Dorisch.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        500,
+        700,
+        900,
+        1000,
+        1200
+      ]
+    },
+    "Phrygisch": {
+      "description": "Kirchentonart Phrygisch.",
+      "intervals_cent": [
+        0,
+        100,
+        300,
+        500,
+        700,
+        800,
+        1000,
+        1200
+      ]
+    },
+    "Lydisch": {
+      "description": "Kirchentonart Lydisch.",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        600,
+        700,
+        900,
+        1100,
+        1200
+      ]
+    },
+    "Mixolydisch": {
+      "description": "Kirchentonart Mixolydisch.",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        500,
+        700,
+        900,
+        1000,
+        1200
+      ]
+    },
+    "Äolisch (Moll)": {
+      "description": "Kirchentonart Äolisch (Natural Minor).",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        500,
+        700,
+        800,
+        1000,
+        1200
+      ]
+    },
+    "Lokrisch": {
+      "description": "Kirchentonart Lokrisch.",
+      "intervals_cent": [
+        0,
+        100,
+        300,
+        500,
+        600,
+        800,
+        1000,
+        1200
+      ]
+    }
+  },
+  "Pentatonik": {
+    "Pentatonik Dur": {
+      "description": "Major Pentatonic.",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        700,
+        900,
+        1200
+      ]
+    },
+    "Pentatonik Moll": {
+      "description": "Minor Pentatonic.",
+      "intervals_cent": [
+        0,
+        300,
+        500,
+        700,
+        1000,
+        1200
+      ]
+    },
+    "Pentatonik Blues": {
+      "description": "Minor Pentatonic + Blue Note.",
+      "intervals_cent": [
+        0,
+        300,
+        500,
+        600,
+        700,
+        1000,
+        1200
+      ]
+    },
+    "Yo (japanisch)": {
+      "description": "Japanische Yo-Pentatonik.",
+      "intervals_cent": [
+        0,
+        200,
+        500,
+        700,
+        900,
+        1200
+      ]
+    }
+  },
+  "Blues & Jazz": {
+    "Blues (Hexatonisch)": {
+      "description": "Blues Scale.",
+      "intervals_cent": [
+        0,
+        300,
+        500,
+        600,
+        700,
+        1000,
+        1200
+      ]
+    },
+    "Bebop Dur": {
+      "description": "Major Bebop (mit b7).",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        500,
+        700,
+        800,
+        900,
+        1100,
+        1200
+      ]
+    },
+    "Bebop Dominant": {
+      "description": "Mixolydian + maj7.",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        500,
+        700,
+        900,
+        1000,
+        1100,
+        1200
+      ]
+    },
+    "Ganzton": {
+      "description": "Whole Tone.",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        600,
+        800,
+        1000,
+        1200
+      ]
+    },
+    "Diminished (WH)": {
+      "description": "Octatonic Whole-Half.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        500,
+        600,
+        800,
+        900,
+        1100,
+        1200
+      ]
+    },
+    "Diminished (HW)": {
+      "description": "Octatonic Half-Whole.",
+      "intervals_cent": [
+        0,
+        100,
+        300,
+        400,
+        600,
+        700,
+        900,
+        1000,
+        1200
+      ]
+    }
+  },
+  "Japan": {
+    "Hirajōshi": {
+      "description": "Japanische Hirajōshi.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        700,
+        800,
+        1200
+      ]
+    },
+    "In Sen": {
+      "description": "Japanische In Sen.",
+      "intervals_cent": [
+        0,
+        100,
+        500,
+        700,
+        1000,
+        1200
+      ]
+    },
+    "Iwato": {
+      "description": "Japanische Iwato.",
+      "intervals_cent": [
+        0,
+        100,
+        500,
+        600,
+        1000,
+        1200
+      ]
+    },
+    "Kumoi": {
+      "description": "Japanische Kumoi.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        700,
+        900,
+        1200
+      ]
+    },
+    "Ritsu": {
+      "description": "Japanische Ritsu.",
+      "intervals_cent": [
+        0,
+        200,
+        500,
+        700,
+        900,
+        1200
+      ]
+    }
+  },
+  "Exotisch": {
+    "Phrygisch Dominant": {
+      "description": "Phrygian Dominant.",
+      "intervals_cent": [
+        0,
+        100,
+        400,
+        500,
+        700,
+        800,
+        1000,
+        1200
+      ]
+    },
+    "Double Harmonic": {
+      "description": "Double Harmonic / Byzantine.",
+      "intervals_cent": [
+        0,
+        100,
+        400,
+        500,
+        700,
+        800,
+        1100,
+        1200
+      ]
+    },
+    "Hungarian Minor": {
+      "description": "Ungarisch Moll.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        600,
+        700,
+        800,
+        1100,
+        1200
+      ]
+    },
+    "Persisch": {
+      "description": "Persian scale (12-TET Annäherung).",
+      "intervals_cent": [
+        0,
+        100,
+        400,
+        500,
+        600,
+        800,
+        1100,
+        1200
+      ]
+    },
+    "Neapolitan Minor": {
+      "description": "Neapolitan Minor.",
+      "intervals_cent": [
+        0,
+        100,
+        300,
+        500,
+        700,
+        800,
+        1100,
+        1200
+      ]
+    },
+    "Neapolitan Major": {
+      "description": "Neapolitan Major.",
+      "intervals_cent": [
+        0,
+        100,
+        300,
+        500,
+        700,
+        900,
+        1100,
+        1200
+      ]
+    },
+    "Enigmatic": {
+      "description": "Enigmatic (12-TET).",
+      "intervals_cent": [
+        0,
+        100,
+        400,
+        600,
+        800,
+        1000,
+        1100,
+        1200
+      ]
+    }
+  },
+  "Arabisch (Maqam, grob)": {
+    "Maqam Rast (approx.)": {
+      "description": "Rast (Annäherung in Cent; mikrotonale Details abhängig von Kontext).",
+      "intervals_cent": [
+        0,
+        200,
+        350,
+        500,
+        700,
+        900,
+        1050,
+        1200
+      ]
+    },
+    "Maqam Bayati (approx.)": {
+      "description": "Bayati (Annäherung in Cent; mikrotonale Details abhängig von Kontext).",
+      "intervals_cent": [
+        0,
+        150,
+        300,
+        500,
+        700,
+        850,
+        1000,
+        1200
+      ]
+    },
+    "Maqam Hijaz (approx.)": {
+      "description": "Hijaz (Annäherung in Cent).",
+      "intervals_cent": [
+        0,
+        100,
+        400,
+        500,
+        700,
+        800,
+        1100,
+        1200
+      ]
+    }
+  },
+  "Indisch (Raga, grob)": {
+    "Bhairav (approx.)": {
+      "description": "Raga Bhairav (12-TET Annäherung).",
+      "intervals_cent": [
+        0,
+        100,
+        400,
+        500,
+        700,
+        800,
+        1100,
+        1200
+      ]
+    },
+    "Todi (approx.)": {
+      "description": "Raga Todi (12-TET Annäherung).",
+      "intervals_cent": [
+        0,
+        100,
+        300,
+        600,
+        700,
+        800,
+        1100,
+        1200
+      ]
+    },
+    "Kalyan (Lydian)": {
+      "description": "Kalyan als Lydian-Annäherung.",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        600,
+        700,
+        900,
+        1100,
+        1200
+      ]
+    }
+  },
+  "12-TET (Basic)": {
+    "Dur": {
+      "description": "Major.",
+      "intervals_cent": [
+        0,
+        200,
+        400,
+        500,
+        700,
+        900,
+        1100,
+        1200
+      ]
+    },
+    "Moll (Natural)": {
+      "description": "Natural Minor.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        500,
+        700,
+        800,
+        1000,
+        1200
+      ]
+    },
+    "Harmonisch Moll": {
+      "description": "Harmonic Minor.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        500,
+        700,
+        800,
+        1100,
+        1200
+      ]
+    },
+    "Melodisch Moll": {
+      "description": "Melodic Minor.",
+      "intervals_cent": [
+        0,
+        200,
+        300,
+        500,
+        700,
+        900,
+        1100,
+        1200
+      ]
+    },
+    "Chromatisch": {
+      "description": "Alle Halbtöne.",
+      "intervals_cent": [
+        0,
+        100,
+        200,
+        300,
+        400,
+        500,
+        600,
+        700,
+        800,
+        900,
+        1000,
+        1100,
+        1200
+      ]
+    }
+  },
+  "Custom": {
+    "Custom (User)": {
+      "description": "Benutzerdefinierte Pitch-Classes (Editor folgt später).",
+      "intervals_cent": [
+        0,
+        1200
+      ]
+    }
+  }
+}

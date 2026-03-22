@@ -1,0 +1,66 @@
+# --- System deps (Linux/Debian/Kali) ---
+# LV2 Hosting benötigt i.d.R. Distro-Pakete (nicht per pip):
+#   sudo apt update
+#   sudo apt install python3-lilv lilv-utils
+#
+# (install.py versucht das best-effort automatisch, falls apt vorhanden ist.)
+
+# --- Audio / MIDI ---
+JACK-Client>=0.5.5
+sounddevice>=0.4.6
+soundfile>=0.12.1
+mido>=1.3.2
+python-rtmidi>=1.5.8
+pydub>=0.25.1
+
+# --- Core ---
+PyQt6>=6.6
+numpy>=1.26
+scipy>=1.12
+
+# --- Audio Analysis / Time-Stretch (optional) ---
+# essentia is used for time-stretching and BPM detection.
+# Install via: pip install essentia
+# If unavailable, these features gracefully degrade.
+# essentia>=2.1b6
+
+# --- JIT Compilation (High-Performance DSP) ---
+numba>=0.59
+llvmlite>=0.42
+
+# --- Graphics (optional) ---
+# The Arranger GPU Waveform overlay currently uses PyOpenGL when enabled.
+PyOpenGL>=3.1.7
+PyOpenGL-accelerate>=3.1.7; platform_system=="Linux"
+
+# Linux Vulkan default (Qt Quick / RHI preparation)
+# NOTE: Qt's Vulkan support primarily depends on system packages
+# (libvulkan1, mesa-vulkan-drivers, vulkan-tools). This Python package is
+# optional and mainly useful for future Vulkan tooling.
+vulkan>=1.3.275.1; platform_system=="Linux"
+
+# Optional: WebGPU (wgpu-native) - uses Vulkan on Linux.
+# This is a future-proof option for replacing OpenGL overlays.
+wgpu>=0.19.0; platform_system=="Linux"
+
+# --- Python 3.13 compatibility (audioop removed) ---
+audioop-lts
+
+# --- External Plugin Hosting ---
+pedalboard>=0.9.17
+
+# --- Rust Engine Build Tool ---
+# maturin builds the Rust pydaw_engine as a Python-importable native module.
+# It wraps cargo and produces a .so/.pyd that Python can import directly.
+maturin>=1.5
+# patchelf sets correct rpath on the built .so (Linux only, needed by maturin)
+patchelf>=0.17; platform_system=="Linux"
+
+# --- VST2 Native Hosting (v0.0.20.392+) ---
+# VST2 .so plugins are hosted via ctypes — NO external Python packages needed.
+# The host uses: ctypes (stdlib), struct (stdlib), numpy (above).
+# VST2 plugins are typically found in:
+#   /usr/lib/vst/          (standard Linux VST2 path)
+#   ~/.vst/                (user VST2 path)
+# Install VST2 plugins via your distro package manager, e.g.:
+#   sudo apt install helm tal-plugins zam-plugins zynaddsubfx

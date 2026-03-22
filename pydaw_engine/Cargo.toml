@@ -1,0 +1,56 @@
+[package]
+name = "pydaw_engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["Py_DAW Team"]
+description = "Real-time audio engine for Py_DAW (ChronoScaleStudio)"
+license = "GPL-3.0"
+
+[dependencies]
+# Audio I/O — cross-platform (ALSA, PipeWire/JACK, PulseAudio, CoreAudio, WASAPI)
+cpal = "0.15"
+
+# Lock-free data structures for audio thread
+crossbeam-channel = "0.5"
+crossbeam-utils = "0.8"
+
+# IPC serialization — fast, compact, schema-less
+rmp-serde = "1.1"         # MessagePack (serde integration)
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"        # Fallback / debug
+
+# Unix domain sockets (async)
+tokio = { version = "1", features = ["full"] }
+
+# Logging
+log = "0.4"
+env_logger = "0.10"
+
+# WAV file reading (Phase R5: Sample Playback)
+hound = "3.5"
+
+# Atomic float: eigene Implementierung in lock_free.rs (AtomicF32 via AtomicU32)
+
+# Parking lot — faster Mutex/RwLock (non-audio-thread only)
+parking_lot = "0.12"
+
+# ===== Phase P7: Rust Native Plugin Hosting (v0.0.20.716) =====
+# Real FFI for VST3/CLAP/LV2 plugin hosting directly in Rust.
+# Uses libloading for safe dlopen/dlsym — no vst3-com or clap-sys needed,
+# we define the raw C/COM structs ourselves for full control.
+
+libloading = "0.8"            # Safe dlopen/dlsym wrapper (VST3 + CLAP + LV2)
+
+# LV2 note: lilv is a system C library.
+# On Debian/Ubuntu: apt install liblilv-dev
+# We link dynamically via libloading (no build.rs / pkg-config needed).
+# If liblilv-0.so is missing at runtime, LV2 scanning gracefully degrades.
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
+
+[profile.dev]
+opt-level = 1    # Some optimization even in debug for audio perf
