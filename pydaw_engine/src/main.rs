@@ -37,8 +37,9 @@ use crate::ipc::{Command, Event};
 // Usage:
 //   pydaw_engine [--socket /tmp/pydaw_engine.sock] [--sr 44100] [--buf 512]
 //
-// The engine listens on a Unix Domain Socket for MessagePack-encoded Commands
-// from the Python GUI and sends back Events (meter levels, playhead position).
+// The engine listens on a Unix Domain Socket (Linux/macOS) or TCP localhost
+// (Windows) for MessagePack-encoded Commands from the Python GUI and sends
+// back Events (meter levels, playhead position).
 //
 // Phase 1A PoC:
 //   - Starts a sine wave generator on a test track
@@ -46,7 +47,11 @@ use crate::ipc::{Command, Event};
 //   - Responds to Play/Stop/Seek/SetTempo commands
 // ============================================================================
 
+#[cfg(unix)]
 const DEFAULT_SOCKET: &str = "/tmp/pydaw_engine.sock";
+#[cfg(windows)]
+const DEFAULT_SOCKET: &str = "127.0.0.1:19847";
+
 const DEFAULT_SAMPLE_RATE: u32 = 44100;
 const DEFAULT_BUFFER_SIZE: u32 = 512;
 const DEFAULT_BPM: f64 = 120.0;
@@ -90,9 +95,9 @@ fn encode_event(event: &Event) -> Result<Vec<u8>, String> {
     rmp_serde::to_vec_named(event).map_err(|e| format!("Encode error: {}", e))
 }
 
-/// IPC handler thread: reads commands from Unix socket, sends to engine.
+/// IPC handler thread: reads commands from socket, sends to engine.
 fn ipc_reader_thread(
-    mut stream: std::os::unix::net::UnixStream,
+    mut stream: impl Read + Send + 'static,
     command_tx: Sender<Command>,
 ) {
     info!("IPC reader started");
@@ -126,9 +131,9 @@ fn ipc_reader_thread(
     }
 }
 
-/// IPC writer thread: reads events from engine, sends to Unix socket.
+/// IPC writer thread: reads events from engine, sends to socket.
 fn ipc_writer_thread(
-    mut stream: std::os::unix::net::UnixStream,
+    mut stream: impl Write + Send + 'static,
     event_rx: Receiver<Event>,
 ) {
     info!("IPC writer started");
@@ -236,18 +241,36 @@ fn main() {
     // Set up PoC sine generator
     setup_poc_sine(&engine_state);
 
-    // Remove old socket file if it exists
+    // Remove old socket file if it exists (Unix only)
+    #[cfg(unix)]
     let _ = std::fs::remove_file(socket_path);
 
-    // Start Unix Domain Socket listener
-    let listener = match std::os::unix::net::UnixListener::bind(socket_path) {
-        Ok(l) => {
-            info!("Listening on {}", socket_path);
-            l
+    // Start listener (Unix socket on Linux/macOS, TCP on Windows)
+    #[cfg(unix)]
+    let listener = {
+        match std::os::unix::net::UnixListener::bind(socket_path) {
+            Ok(l) => {
+                info!("Listening on {}", socket_path);
+                l
+            }
+            Err(e) => {
+                error!("Failed to bind socket {}: {}", socket_path, e);
+                std::process::exit(1);
+            }
         }
-        Err(e) => {
-            error!("Failed to bind socket {}: {}", socket_path, e);
-            std::process::exit(1);
+    };
+
+    #[cfg(windows)]
+    let listener = {
+        match std::net::TcpListener::bind(socket_path) {
+            Ok(l) => {
+                info!("Listening on {}", socket_path);
+                l
+            }
+            Err(e) => {
+                error!("Failed to bind TCP {}: {}", socket_path, e);
+                std::process::exit(1);
+            }
         }
     };
 
@@ -314,12 +337,12 @@ fn main() {
 
     // Accept one client connection (single-client for Phase 1A)
     info!("Waiting for Python client connection...");
-    match listener.accept() {
-        Ok((stream, _addr)) => {
-            info!("Client connected");
 
-            let read_stream = stream.try_clone().expect("Failed to clone socket");
-            let write_stream = stream;
+    // Helper macro to handle both Unix and TCP stream types identically
+    macro_rules! handle_client {
+        ($stream:expr) => {{
+            let read_stream = $stream.try_clone().expect("Failed to clone socket");
+            let write_stream = $stream;
 
             // Start IPC reader thread
             let reader_handle = std::thread::Builder::new()
@@ -340,6 +363,13 @@ fn main() {
             // Wait for threads
             let _ = reader_handle.join();
             let _ = writer_handle.join();
+        }};
+    }
+
+    match listener.accept() {
+        Ok((stream, _addr)) => {
+            info!("Client connected");
+            handle_client!(stream);
         }
         Err(e) => {
             error!("Failed to accept connection: {}", e);
@@ -351,6 +381,7 @@ fn main() {
         .running
         .store(false, std::sync::atomic::Ordering::Release);
     let _ = audio_thread.join();
+    #[cfg(unix)]
     let _ = std::fs::remove_file(socket_path);
 
     info!("Py_DAW Audio Engine stopped");
